@@ -30,7 +30,7 @@ public static class ExplorerFolderService
                     !url.StartsWith("file:", StringComparison.OrdinalIgnoreCase)) return null;
 
                 var uri = new Uri(url);
-                return Uri.UnescapeDataString(uri.AbsolutePath);
+                return uri.LocalPath;
             }
         }
         catch

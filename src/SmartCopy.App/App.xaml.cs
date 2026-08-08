@@ -15,6 +15,7 @@ public partial class App : Application
     private SettingsService _settings = new();
     private CancellationTokenSource? _currentCts;
     private string _lastFolder = string.Empty;
+    private volatile bool _replayingPaste;
 
     public bool IsExiting { get; private set; }
 
@@ -61,18 +62,57 @@ public partial class App : Application
     private bool OnInterceptPaste()
     {
         var files = ClipboardService.TryGetFileDropList();
-        if (files is null || files.Count == 0) return false;
+        if (_replayingPaste || files is null || files.Count == 0) return false;
 
         IntPtr foreground = NativeMethods.GetForegroundWindow();
         string? windowClass = ExplorerFolderService.GetWindowClassName(foreground);
         if (windowClass is not "CabinetWClass" and not "ExploreWClass") return false;
 
-        string? folder = ExplorerFolderService.GetFolderPathForWindow(foreground);
-        if (string.IsNullOrEmpty(folder)) return false;
-
+        // Note: COM (IShellWindows) cannot be called from inside this hook callback
+        // (RPC_E_CANTCALLOUT_ININPUTSYNCCALL), so folder resolution happens on the
+        // UI thread. The paste is suppressed optimistically; if the folder cannot
+        // be resolved we replay Ctrl+V so the normal paste still happens.
         string[] snapshot = files.ToArray();
-        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => StartTransfer(snapshot, folder)));
+        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => ResolveAndTransfer(snapshot)));
         return true;
+    }
+
+    private void ResolveAndTransfer(string[] files)
+    {
+        IntPtr foreground = NativeMethods.GetForegroundWindow();
+        string? windowClass = ExplorerFolderService.GetWindowClassName(foreground);
+        if (windowClass is not "CabinetWClass" and not "ExploreWClass") return;
+
+        string? folder = ExplorerFolderService.GetFolderPathForWindow(foreground);
+        if (string.IsNullOrEmpty(folder))
+        {
+            ReplayPaste();
+            return;
+        }
+
+        StartTransfer(files, folder);
+    }
+
+    private void ReplayPaste()
+    {
+        _replayingPaste = true;
+        try
+        {
+            NativeMethods.keybd_event(NativeMethods.VkControl, 0, 0, UIntPtr.Zero);
+            NativeMethods.keybd_event(NativeMethods.VkV, 0, 0, UIntPtr.Zero);
+            NativeMethods.keybd_event(NativeMethods.VkV, 0, NativeMethods.KeyeventfKeyUp, UIntPtr.Zero);
+            NativeMethods.keybd_event(NativeMethods.VkControl, 0, NativeMethods.KeyeventfKeyUp, UIntPtr.Zero);
+        }
+        finally
+        {
+            var release = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            release.Tick += (_, _) =>
+            {
+                _replayingPaste = false;
+                release.Stop();
+            };
+            release.Start();
+        }
     }
 
     public async void StartTransfer(
