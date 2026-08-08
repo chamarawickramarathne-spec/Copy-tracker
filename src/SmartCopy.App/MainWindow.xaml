@@ -1,0 +1,188 @@
+﻿<Window x:Class="SmartCopy.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SmartCopy.App"
+        Title="SmartCopy" Width="920" Height="640" MinWidth="780" MinHeight="560"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource BgSurface}"
+        FontFamily="{StaticResource FontFam}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="1"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="20,16,20,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Image Source="pack://application:,,,/Assets/smartcopy.ico" Width="34" Height="34" Grid.Column="0"/>
+            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="SmartCopy" Style="{StaticResource H1}" FontSize="20" LineHeight="24"/>
+                <TextBlock Text="Intelligent file transfer &amp; management" Style="{StaticResource Caption}"/>
+            </StackPanel>
+            <Border Grid.Column="3" CornerRadius="20" Background="#1A16C784" Padding="10,4" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="7" Height="7" Fill="{StaticResource Success}" VerticalAlignment="Center"/>
+                    <TextBlock Text="Clipboard interception active" Style="{StaticResource Caption}" Margin="6,0,0,0" Foreground="{StaticResource Success}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="1" Height="1" Background="{StaticResource BorderBrush}"/>
+
+        <TabControl Grid.Row="2" Margin="20,8,20,16">
+            <TabItem Header="Smart Copy">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.5*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Source files" FontWeight="SemiBold"/>
+                        <TextBlock Text="One path per line — or simply press Ctrl+V in Explorer after copying files." Style="{StaticResource Caption}" Margin="0,2,0,8"/>
+                        <TextBox x:Name="txtSources" AcceptsReturn="True" Height="110" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" Style="{StaticResource TextBoxFluent}"/>
+
+                        <TextBlock Text="Destination folder" FontWeight="SemiBold" Margin="0,14,0,6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="txtDest" Grid.Column="0" Style="{StaticResource TextBoxFluent}" VerticalContentAlignment="Center"/>
+                            <Button Grid.Column="2" Click="OnBrowse" Content="Browse..." Style="{StaticResource BtnBase}"/>
+                        </Grid>
+
+                        <Button x:Name="btnCopy" Click="OnCopyNow" Style="{StaticResource BtnAccent}" Content="Start smart copy"
+                                Margin="0,16,0,0" Width="160" HorizontalAlignment="Left"/>
+                        <ProgressBar x:Name="manualBar" Style="{StaticResource ProgressBarFluent}" Margin="0,14,0,6"/>
+                        <TextBlock x:Name="txtManualStats" Style="{StaticResource Caption}"/>
+                    </StackPanel>
+
+                    <Border Grid.Column="2" Style="{StaticResource InfoCard}">
+                        <StackPanel>
+                            <TextBlock Text="How it works" FontWeight="SemiBold" FontSize="15"/>
+                            <TextBlock Text="SmartCopy turns the default Windows paste into a lightning-fast, smartly-renamed transfer." Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,6,0,12"/>
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Text="•  Copy files with Ctrl+C in Explorer." Margin="0,2,0,0"/>
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Text="•  Press Ctrl+V in the destination folder." Margin="0,6,0,0"/>
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Text="•  SmartCopy renames each file using the folder name — dropping image.jpg into Vacation becomes Vacation_3.jpg." Margin="0,6,0,0"/>
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Text="•  Transfers stream at full speed with pooled buffers and parallel I/O — no UI freezes." Margin="0,6,0,0"/>
+                            <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,14,0,12"/>
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Text="Text clipboard content is never intercepted. If the target folder can't be resolved, the normal paste proceeds untouched." Foreground="{StaticResource TextSecondary}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Settings">
+                <StackPanel MaxWidth="560" HorizontalAlignment="Left" Margin="4,8">
+                    <TextBlock Text="Transfer" FontWeight="SemiBold" FontSize="15"/>
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Buffer size" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="lblBuffer" Grid.Column="1" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Slider x:Name="sldBuffer" Style="{StaticResource SliderFluent}" Minimum="64" Maximum="4096"
+                            TickFrequency="64" ValueChanged="OnBufferChanged" Margin="0,6,0,0"/>
+                    <TextBlock Text="Parallel file copies" Style="{StaticResource Caption}" Margin="0,14,0,0"/>
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Parallel files" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="lblParallel" Grid.Column="1" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Slider x:Name="sldParallel" Style="{StaticResource SliderFluent}" Minimum="1" Maximum="8"
+                            ValueChanged="OnParallelChanged" Margin="0,6,0,0"/>
+
+                    <TextBlock Text="Auto-renaming" FontWeight="SemiBold" FontSize="15" Margin="0,24,0,8"/>
+                    <TextBlock Text="Naming scheme" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
+                    <ComboBox x:Name="cmbScheme" Style="{StaticResource ComboFluent}" Width="300" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="Folder-based — Vacation_3.jpg"/>
+                        <ComboBoxItem Content="Sequential — image_3.jpg"/>
+                    </ComboBox>
+
+                    <CheckBox x:Name="chkOpenFolder" Style="{StaticResource CheckFluent}" Content="Open destination folder when a transfer finishes" Margin="0,16,0,0"/>
+                    <CheckBox x:Name="chkAutoStart" Style="{StaticResource CheckFluent}" Content="Start SmartCopy with Windows" Margin="0,10,0,0"/>
+                    <CheckBox x:Name="chkStartMinimized" Style="{StaticResource CheckFluent}" Content="Start minimized to the system tray" Margin="0,10,0,0"/>
+
+                    <Button Click="OnSaveSettings" Style="{StaticResource BtnAccent}" Content="Save settings" Width="140" Margin="0,22,0,0" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="txtSettingsStatus" Style="{StaticResource Caption}" Margin="0,10,0,0"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="History">
+                <Grid Margin="4,8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ListView x:Name="lstHistory" Grid.Row="0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Time" Width="140" DisplayMemberBinding="{Binding Time}"/>
+                                <GridViewColumn Header="Destination" Width="360" DisplayMemberBinding="{Binding Destination}"/>
+                                <GridViewColumn Header="Files" Width="60" DisplayMemberBinding="{Binding FileCount}"/>
+                                <GridViewColumn Header="Duration" Width="110" DisplayMemberBinding="{Binding Duration}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <Button Grid.Row="1" Click="OnClearHistory" Content="Clear history" Style="{StaticResource BtnGhost}"
+                            HorizontalAlignment="Right" Margin="0,8,0,0"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="About">
+                <Grid MaxWidth="640" HorizontalAlignment="Left" Margin="4,8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <Image Source="pack://application:,,,/Assets/smartcopy.ico" Width="42" Height="42"/>
+                        <StackPanel Margin="12,0,0,0">
+                            <TextBlock Text="SmartCopy" Style="{StaticResource H1}" FontSize="22"/>
+                            <TextBlock x:Name="txtVersion" Style="{StaticResource Caption}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Text="SmartCopy is a high-performance Windows file management system that intercepts copy/paste, renames files intelligently, and transfers at full speed with zero UI freezing." TextWrapping="Wrap" Style="{StaticResource Caption}" Margin="0,14,0,0"/>
+
+                    <Border Grid.Row="3" Style="{StaticResource InfoCard}" Margin="0,20,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Updates (Git-based)" FontWeight="SemiBold"/>
+                            <TextBlock Text="Set your GitHub repository (owner/repo). SmartCopy checks release tags via git and installs newer versions automatically." Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,6,0,12"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="txtRepo" Style="{StaticResource TextBoxFluent}" VerticalContentAlignment="Center"/>
+                                <Button Grid.Column="2" Click="OnCheckUpdate" Content="Check for updates" Style="{StaticResource BtnBase}"/>
+                            </Grid>
+                            <ProgressBar x:Name="updateBar" Style="{StaticResource ProgressBarFluent}" Margin="0,12,0,6" Visibility="Collapsed"/>
+                            <TextBlock x:Name="txtUpdateStatus" Style="{StaticResource Caption}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

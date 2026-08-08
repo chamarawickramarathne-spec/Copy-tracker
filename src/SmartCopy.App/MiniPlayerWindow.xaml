@@ -1,0 +1,112 @@
+<Window x:Class="SmartCopy.App.MiniPlayerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SmartCopy" Width="380" Height="122"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        ShowActivated="False" Focusable="False">
+    <Border x:Name="RootBorder" CornerRadius="14" Background="#F2141619"
+            BorderBrush="#4D2C3138" BorderThickness="1" SnapsToDevicePixels="True">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.45" Color="Black"/>
+        </Border.Effect>
+        <Grid Margin="14,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="8"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="7"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="10"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="4"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Image Source="pack://application:,,,/Assets/smartcopy.ico" Width="18" Height="18" Grid.Column="0"/>
+                <TextBlock Text="SmartCopy" FontWeight="SemiBold" FontSize="13" Margin="8,0,0,0" Grid.Column="1" VerticalAlignment="Center"/>
+                <TextBlock x:Name="txtState" Grid.Column="2" Style="{StaticResource Caption}" Margin="8,0,4,0"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <ToggleButton x:Name="btnExpand" Grid.Column="3" Cursor="Hand" Click="OnToggleExpand" Width="26" Height="26" Focusable="False">
+                    <ToggleButton.Template>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="bd" CornerRadius="6" Background="Transparent">
+                                <Path x:Name="chev" Data="M 0 0 L 4 4 L 8 0" Stroke="#9AA3AD" StrokeThickness="1.6"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Path.LayoutTransform>
+                                        <RotateTransform Angle="0"/>
+                                    </Path.LayoutTransform>
+                                </Path>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#2A2E35"/></Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="chev" Property="LayoutTransform">
+                                        <Setter.Value>
+                                            <RotateTransform Angle="180"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </ToggleButton.Template>
+                </ToggleButton>
+                <Button Grid.Column="5" Click="OnClose" Cursor="Hand" Width="26" Height="26" Background="Transparent"
+                        BorderThickness="0" Focusable="False">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd" CornerRadius="6" Background="Transparent">
+                                <Path Data="M 0 0 L 8 8 M 8 0 L 0 8" Stroke="#9AA3AD" StrokeThickness="1.6"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#2A2E35"/></Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+
+            <ProgressBar x:Name="bar" Grid.Row="2" Style="{StaticResource ProgressBarFluent}" Maximum="100"/>
+
+            <TextBlock x:Name="txtFile" Grid.Row="4" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis"/>
+
+            <Grid Grid.Row="6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="txtStats" Grid.Column="0" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                <Button x:Name="btnCancel" Grid.Column="1" Click="OnCancel" Style="{StaticResource BtnGhost}" Content="Cancel"
+                        FontSize="12" Padding="10,4" Visibility="Visible" VerticalAlignment="Center"/>
+            </Grid>
+
+            <Grid x:Name="gridDetails" Grid.Row="8" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <ListView x:Name="lstFiles" Grid.Row="0" MaxHeight="150" FontSize="12"/>
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="txtDoneSummary" Grid.Column="0" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                    <Button x:Name="btnOpenFolder" Grid.Column="1" Click="OnOpenFolder" Style="{StaticResource BtnBase}"
+                            Content="Open folder" FontSize="12" Padding="12,5" Visibility="Collapsed"/>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
