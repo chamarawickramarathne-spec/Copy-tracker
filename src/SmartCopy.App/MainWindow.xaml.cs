@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
 using SmartCopy.Core;
@@ -112,6 +113,39 @@ public partial class MainWindow : Window
     }
 
     private void OnClearHistory(object sender, RoutedEventArgs e) => _history.Clear();
+
+    private async void OnCheckUpdate(object sender, RoutedEventArgs e)
+    {
+        string repo = _settings.UpdateRepository.Trim();
+        if (string.IsNullOrWhiteSpace(repo)) return;
+
+        btnUpdate.IsEnabled = false;
+        btnUpdate.Content = "Checking...";
+        try
+        {
+            var latest = await _updater.CheckForUpdatesAsync(repo);
+            if (latest is null)
+            {
+                btnUpdate.Content = "Up to date";
+            }
+            else
+            {
+                btnUpdate.Content = $"Downloading {latest}...";
+                await _updater.DownloadUpdateAsync(repo, latest, new Progress<string>());
+                btnUpdate.Content = "Restarting...";
+                ((App)Application.Current).RestartForUpdate();
+                return;
+            }
+        }
+        catch
+        {
+            btnUpdate.Content = "Check failed";
+        }
+
+        btnUpdate.IsEnabled = true;
+        await Task.Delay(3000);
+        btnUpdate.Content = "Check for updates";
+    }
 
     protected override void OnClosing(CancelEventArgs e)
     {

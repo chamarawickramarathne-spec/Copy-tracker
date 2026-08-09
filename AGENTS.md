@@ -2,6 +2,17 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.7 — Manual "Check for updates" button next to version (v1.0.7)
+
+**Date:** 2026-08-09
+
+### What was changed
+- **Header update button**: a small "Check for updates" ghost button now sits next to the version number in the window header (next to `SmartCopy 1.0.7`). Clicking it checks `git ls-remote --tags` against the configured repo (`SettingsService.UpdateRepository`), and if a newer release exists it downloads `SmartCopy.exe` and restarts to apply it. Button text reflects state (`Checking...` / `Up to date` / `Downloading {version}...` / `Restarting...` / `Check failed`) and resets after 3s. Works regardless of the "Automatically download and apply new versions" setting (manual action). Auto-update on startup is unchanged.
+
+### Verified
+- 11/11 xUnit tests pass. Full pipeline via `tools/build.ps1`: build clean (0 warnings), publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.7.exe`). `medial_support.txt` regenerated.
+- **Released via git**: commit + tag `v1.0.7` pushed + GitHub Release `v1.0.7` created with `publish/SmartCopy.exe` asset.
+
 ## Mod 1.0.6 — Rename format: name_folder_number (v1.0.6)
 
 **Date:** 2026-08-09
