@@ -66,6 +66,43 @@ public sealed class IntelligentRenamerTests
         Assert.Equal(2, items.Count);
         Assert.All(items, i => Assert.Equal(tmp.Path, Path.GetDirectoryName(i.DestinationPath)));
     }
+
+    [Fact]
+    public void BuildItems_MultipleSameExtension_GeneratesUniqueDestinations()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "vacation");
+        Directory.CreateDirectory(folder);
+        string[] sources =
+        [
+            Path.Combine(tmp.Path, "a.jpg"),
+            Path.Combine(tmp.Path, "b.jpg"),
+            Path.Combine(tmp.Path, "c.jpg"),
+        ];
+
+        var renamer = new IntelligentRenamer(RenameScheme.FolderBased);
+        var items = renamer.BuildItems(sources, folder);
+
+        Assert.Equal(3, items.Count);
+        Assert.Equal(3, items.Select(i => i.DestinationPath).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+
+    [Fact]
+    public void BuildItems_SequentialScheme_SameStemFromDifferentFolders_GeneratesUnique()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folderA = Path.Combine(tmp.Path, "a");
+        string folderB = Path.Combine(tmp.Path, "b");
+        Directory.CreateDirectory(folderA);
+        Directory.CreateDirectory(folderB);
+        string[] sources = [Path.Combine(folderA, "photo.jpg"), Path.Combine(folderB, "photo.jpg")];
+
+        var renamer = new IntelligentRenamer(RenameScheme.Sequential);
+        var items = renamer.BuildItems(sources, tmp.Path);
+
+        Assert.Equal(2, items.Count);
+        Assert.Equal(2, items.Select(i => i.DestinationPath).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
 }
 
 public sealed class TransferEngineTests
@@ -124,6 +161,50 @@ public sealed class TransferEngineTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             engine.CopyAsync([new TransferItem(sourceFile, Path.Combine(dst.Path, "big.bin"))], null, cts.Token));
+    }
+
+    [Fact]
+    public async Task CopyAsync_MultipleSameExtension_AllSucceed()
+    {
+        using var src = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_src_" + Guid.NewGuid().ToString("N")));
+        using var dst = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_dst_" + Guid.NewGuid().ToString("N")));
+
+        for (int i = 0; i < 3; i++)
+        {
+            var bytes = new byte[64 * 1024];
+            bytes[0] = (byte)(i + 1);
+            bytes[^1] = (byte)(i + 1);
+            File.WriteAllBytes(Path.Combine(src.Path, $"img{i}.jpg"), bytes);
+        }
+
+        var items = new IntelligentRenamer(RenameScheme.FolderBased).BuildItems(
+            Directory.GetFiles(src.Path, "*.jpg"), dst.Path);
+        var engine = new TransferEngine(parallelLimit: 4);
+
+        var copied = await engine.CopyAsync(items);
+
+        Assert.Equal(3, copied.Count);
+        Assert.Equal(3, copied.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(3, Directory.GetFiles(dst.Path, "*.jpg").Length);
+    }
+
+    [Fact]
+    public async Task CopyAsync_DuplicateDestinations_ThrowsClearError()
+    {
+        using var src = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_src_" + Guid.NewGuid().ToString("N")));
+        using var dst = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_dst_" + Guid.NewGuid().ToString("N")));
+
+        string sourceFile = Path.Combine(src.Path, "data.bin");
+        File.WriteAllBytes(sourceFile, new byte[16]);
+
+        var engine = new TransferEngine(parallelLimit: 2);
+        var items = new[]
+        {
+            new TransferItem(sourceFile, Path.Combine(dst.Path, "out.bin")),
+            new TransferItem(sourceFile, Path.Combine(dst.Path, "out.bin")),
+        };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => engine.CopyAsync(items));
     }
 }
 

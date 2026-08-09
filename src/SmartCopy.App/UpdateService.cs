@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.IO.Compression;
 using System.Text.RegularExpressions;
 
 namespace SmartCopy.App;
@@ -44,33 +43,19 @@ public sealed class UpdateService
         if (!File.Exists(exe))
             throw new InvalidOperationException("Could not locate SmartCopy.exe for update.");
 
-        string url = $"https://codeload.github.com/{repository}/zip/refs/tags/v{version}";
-        string work = Path.Combine(Path.GetTempPath(), $"smartcopy_{version}");
-        if (Directory.Exists(work)) Directory.Delete(work, true);
-        Directory.CreateDirectory(work);
+        string url = $"https://github.com/{repository}/releases/download/v{version}/SmartCopy.exe";
+        string staged = Path.Combine(appDir, "SmartCopy.exe.new");
 
-        string zip = Path.Combine(work, "update.zip");
         progress.Report($"Downloading v{version}...");
         using (var http = new HttpClient())
-        using (var fs = new FileStream(zip, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
+        using (var fs = new FileStream(staged, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
         {
             var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             await response.Content.CopyToAsync(fs, ct).ConfigureAwait(false);
         }
 
-        progress.Report("Extracting...");
-        ZipFile.ExtractToDirectory(zip, work);
-
-        string? newExe = Directory.EnumerateFiles(work, "SmartCopy.exe", SearchOption.AllDirectories)
-            .FirstOrDefault(p => !Path.GetFullPath(p).StartsWith(Path.GetFullPath(work) + Path.DirectorySeparatorChar + "update.zip", StringComparison.OrdinalIgnoreCase));
-        newExe ??= Directory.EnumerateFiles(work, "SmartCopy.exe", SearchOption.AllDirectories).FirstOrDefault();
-        if (newExe is null)
-            throw new InvalidOperationException("The update package does not contain SmartCopy.exe.");
-
         progress.Report("Applying update...");
-        string staged = Path.Combine(appDir, "SmartCopy.exe.new");
-        File.Copy(newExe, staged, true);
 
         string script = Path.Combine(appDir, "apply_update.cmd");
         string quotedExe = $"\"{exe}\"";

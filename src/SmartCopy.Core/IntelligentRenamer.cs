@@ -13,9 +13,22 @@ public sealed class IntelligentRenamer
     public IntelligentRenamer(RenameScheme scheme = RenameScheme.FolderBased) => _scheme = scheme;
 
     public IReadOnlyList<TransferItem> BuildItems(IEnumerable<string> sourcePaths, string destinationFolder)
-        => sourcePaths.Select(p => new TransferItem(p, GenerateSmartFilePath(p, destinationFolder))).ToArray();
+    {
+        var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var items = new List<TransferItem>();
+        foreach (string source in sourcePaths)
+        {
+            string destination = GenerateSmartFilePath(source, destinationFolder, reserved);
+            reserved.Add(destination);
+            items.Add(new TransferItem(source, destination));
+        }
+        return items;
+    }
 
-    public string GenerateSmartFilePath(string sourceFilePath, string destinationFolderPath)
+    public string GenerateSmartFilePath(
+        string sourceFilePath,
+        string destinationFolderPath,
+        ISet<string>? reserved = null)
     {
         string extension = Path.GetExtension(sourceFilePath);
         string stem = Path.GetFileNameWithoutExtension(sourceFilePath);
@@ -42,7 +55,7 @@ public sealed class IntelligentRenamer
             finalPath = Path.Combine(destinationFolderPath, newFileName);
             attempt++;
         }
-        while (File.Exists(finalPath));
+        while (File.Exists(finalPath) || (reserved is not null && reserved.Contains(finalPath)));
 
         return finalPath;
     }

@@ -2,6 +2,22 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.2 — Multi-file paste fix: duplicate destination names (v1.0.0)
+
+**Date:** 2026-08-09
+
+### What was fixed
+- **Root cause of "fail" on multiple files** (`IntelligentRenamer.BuildItems`): each source was named independently, so with the `FolderBased` scheme every file of the same extension got the same destination (`vacation_1.jpg`, `vacation_1.jpg`, …). The `File.Exists` collision check saw nothing yet, so the engine received duplicate destination paths and parallel copies hit a `FileShare.None` sharing violation (`IOException`) → `AggregateException` → "fail" state.
+- **Batch-scoped name reservation** (`IntelligentRenamer.BuildItems`): now keeps a case-insensitive `HashSet<string>` of destinations reserved within the batch and reserves each generated path as it goes. `GenerateSmartFilePath` gained an optional `ISet<string>? reserved` parameter; the collision loop also rejects reserved names. Single-file behavior and existing tests unchanged.
+- **Defense-in-depth** (`TransferEngine.CopyAsync`): early guard detects duplicate `DestinationPath` entries and throws a clear `ArgumentException` instead of corrupting/overwriting data.
+- **Clearer failure message** (`App.StartTransfer`): the fail widget now lists each failed source → destination line (first 5 + "… and N more") instead of only the first inner exception. Failures now carry the failing item (`ConcurrentQueue<(TransferItem, Exception)>`).
+- **Git self-update now works via GitHub Releases** (`UpdateService.ApplyUpdateAsync`): previously downloaded the codeload tag zip and extracted `SmartCopy.exe` from it, but no exe is committed to the repo so the update could never be delivered. Now downloads the published binary directly from `https://github.com/{repo}/releases/download/v{version}/SmartCopy.exe`. `CheckForUpdatesAsync` (git tag compare) unchanged. Version bumped to 1.0.2 (csproj + installer) so the tag triggers an update on 1.0.0 installs.
+
+### Verified
+- 11/11 xUnit tests pass (added 4: multi-file unique destinations for FolderBased, same-stem uniqueness for Sequential, engine E2E copy of 3 same-extension files, duplicate-destination guard).
+- Full pipeline via `tools/build.ps1`: build clean, tests green, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.2.exe`).
+- **Released via git**: changes committed + pushed to `origin/main`, tag `v1.0.2` pushed, GitHub Release `v1.0.2` created with `publish/SmartCopy.exe` as asset (asset name exactly `SmartCopy.exe` so the update URL resolves).
+
 ## Mod 1.0.1 — Paste interception fixes (v1.0.0)
 
 **Date:** 2026-08-09

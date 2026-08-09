@@ -23,10 +23,20 @@ public sealed class TransferEngine
     {
         if (items.Count == 0) return Array.Empty<string>();
 
+        string[] duplicates = items.GroupBy(i => i.DestinationPath, StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToArray();
+        if (duplicates.Length > 0)
+        {
+            throw new ArgumentException(
+                "Multiple sources would write to the same destination: " + string.Join(", ", duplicates));
+        }
+
         long total = items.Sum(i => TryGetLength(i.SourcePath));
         var aggregator = new ProgressAggregator(total);
         var completed = new ConcurrentQueue<string>();
-        var failures = new ConcurrentQueue<Exception>();
+        var failures = new ConcurrentQueue<(TransferItem Item, Exception Error)>();
         using var throttle = new SemaphoreSlim(_parallelLimit);
         int done = 0;
 
@@ -47,7 +57,7 @@ public sealed class TransferEngine
             }
             catch (Exception ex)
             {
-                failures.Enqueue(ex);
+                failures.Enqueue((item, ex));
             }
             finally
             {
@@ -68,7 +78,9 @@ public sealed class TransferEngine
         if (!failures.IsEmpty)
         {
             progress?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, failed: true));
-            throw new AggregateException("One or more files failed to copy.", failures);
+            var errors = failures.Select(f => new IOException(
+                $"'{f.Item.SourcePath}' -> '{f.Item.DestinationPath}': {f.Error.Message}", f.Error));
+            throw new AggregateException("One or more files failed to copy.", errors);
         }
 
         progress?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, completed: true));

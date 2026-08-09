@@ -154,9 +154,20 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            string message = ex is AggregateException agg
-                ? (agg.InnerExceptions.FirstOrDefault()?.Message ?? "Transfer failed.")
-                : ex.Message;
+            string message;
+            if (ex is AggregateException agg && agg.InnerExceptions.Count > 0)
+            {
+                var lines = agg.InnerExceptions.Select(e => e.Message).Distinct().Take(5).ToList();
+                message = string.Join(Environment.NewLine, lines);
+                if (agg.InnerExceptions.Count > lines.Count)
+                {
+                    message += Environment.NewLine + $"… and {agg.InnerExceptions.Count - lines.Count} more";
+                }
+            }
+            else
+            {
+                message = ex.Message;
+            }
             _miniPlayer?.Fail(message);
             onDone?.Invoke(null);
         }
