@@ -8,9 +8,10 @@ public enum RenameScheme
 
 public sealed class IntelligentRenamer
 {
-    private readonly RenameScheme _scheme;
-
-    public IntelligentRenamer(RenameScheme scheme = RenameScheme.FolderBased) => _scheme = scheme;
+    public IntelligentRenamer(RenameScheme scheme = RenameScheme.FolderBased)
+    {
+        _ = scheme;
+    }
 
     public IReadOnlyList<TransferItem> BuildItems(IEnumerable<string> sourcePaths, string destinationFolder)
     {
@@ -50,7 +51,7 @@ public sealed class IntelligentRenamer
         int attempt = count + 1;
         do
         {
-            string baseName = _scheme == RenameScheme.Sequential ? stem : folderName;
+            string baseName = $"{stem}_{folderName}";
             newFileName = $"{baseName}_{attempt}{extension}";
             finalPath = Path.Combine(destinationFolderPath, newFileName);
             attempt++;

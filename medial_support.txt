@@ -7,11 +7,11 @@
    SmartCopy turns boring Windows copy/paste into a lightning-fast, auto-renaming smart transfer. Copy any files, press Ctrl+V in a folder, and SmartCopy does the rest — no dialogs, no waiting.
 
 3. Long description
-   SmartCopy is a high-performance Windows file transfer tool that upgrades the default copy/paste flow. Copy one file or a whole folder of photos in Explorer, press Ctrl+V in any destination folder, and SmartCopy instantly starts a blazing-fast transfer that streams with pooled buffers and parallel I/O — your screen never freezes. Files are renamed automatically using the destination folder name, so dropping photo.jpg into your Vacation folder produces Vacation_3.jpg, Vacation_4.jpg, and so on — every file keeps a unique, meaningful name, even when you paste many files at once. A sleek, animated mini-player widget tracks progress, speed, and time remaining in real time, and can expand into a full detail view showing each file being copied. It runs quietly in the system tray, can start with Windows, and its Fluent dark interface is built for Windows 11. SmartCopy turns the most routine computing task into something fast, smooth, and genuinely satisfying.
+   SmartCopy is a high-performance Windows file transfer tool that upgrades the default copy/paste flow. Copy one file or a whole folder of photos in Explorer, press Ctrl+V in any destination folder, and SmartCopy instantly starts a blazing-fast transfer that streams with pooled buffers and parallel I/O — your screen never freezes. Files are renamed automatically as <original name>_<folder>_<number>, so dropping photo.jpg into your Vacation folder produces photo_Vacation_3.jpg, photo_Vacation_4.jpg, and so on — every file keeps a unique, meaningful name, even when you paste many files at once. A sleek, animated mini-player widget tracks progress, speed, and time remaining in real time, and can expand into a full detail view showing each file being copied. It runs quietly in the system tray, can start with Windows, and its Fluent dark interface is built for Windows 11. SmartCopy turns the most routine computing task into something fast, smooth, and genuinely satisfying.
 
 4. Facebook post
    🚀 Stop pasting like it's 2009.
-   Meet SmartCopy — the Windows file transfer tool that intercepts Ctrl+V, auto-renames every file using the destination folder (photo.jpg → Vacation_3.jpg), and copies at full speed with zero UI freezing. Paste multiple files at once — every one gets a unique name automatically. A sleek animated widget tracks every byte, and it lives quietly in your system tray. Dark-mode Fluent design, built for Windows 11. Copy. Paste. Done. ⚡
+   Meet SmartCopy — the Windows file transfer tool that intercepts Ctrl+V, auto-renames every file as name_folder_number (photo.jpg → photo_Vacation_3.jpg), and copies at full speed with zero UI freezing. Paste multiple files at once — every one gets a unique name automatically. A sleek animated widget tracks every byte, and it lives quietly in your system tray. Dark-mode Fluent design, built for Windows 11. Copy. Paste. Done. ⚡
 
 5. Tags
    #SmartCopy #FileTransfer #WindowsApp #Productivity #FileManager #AutoRename #TechTools #Windows11 #DesktopApp #FreeSoftware
@@ -19,8 +19,8 @@
 6. Image prompts
    a. A sleek glowing origami folder folding into a lightning bolt, electric cyan to hot magenta neon gradient on a pitch-black background, glassmorphism, subtle inner glow, ultra-modern tech app icon, 3D render, octane, high detail.
    b. A dark-mode Windows desktop at night, a translucent animated progress widget floating above the taskbar with a cyan-to-magenta progress bar, multiple file thumbnails flying into the widget, soft neon glow, cinematic depth of field.
-   c. A pile of identical generic files on the left morphing into neatly named, organized files on the right (Vacation_1, Vacation_2, Vacation_3), each with a unique label, neon cyan accents, dark studio background, floating light particles.
+   c. A pile of identical generic files on the left morphing into neatly named, organized files on the right (photo_Vacation_1, photo_Vacation_2, photo_Vacation_3), each with a unique label, neon cyan accents, dark studio background, floating light particles.
    d. A minimalist flat illustration of the Windows logo merging with a copy/paste arrow that transforms into a folded paper plane shooting forward with motion streaks, magenta and cyan color pop on dark charcoal.
    e. A close-up of hands pressing Ctrl+V on a modern keyboard, holographic file icons flying from the keys into an open glowing folder, dark moody lighting, cyan and magenta rim light, sci-fi product feel.
 
-7. (Regenerated after every modification — this is the current set for v1.0.5.)
+7. (Regenerated after every modification — this is the current set for v1.0.6.)

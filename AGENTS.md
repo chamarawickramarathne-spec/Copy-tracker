@@ -2,6 +2,17 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.6 — Rename format: name_folder_number (v1.0.6)
+
+**Date:** 2026-08-09
+
+### What was changed
+- **New auto-rename format** (`IntelligentRenamer.GenerateSmartFilePath`): both schemes (FolderBased and Sequential) now produce `<original file name>_<folder name>_<number><ext>` — e.g. dropping `photo.jpg` into the `Vacation` folder yields `photo_Vacation_3.jpg` (was `Vacation_3.jpg` / `image_3.jpg`). The `<original file name>` is the source stem, `<folder name>` the destination folder name, `<number>` continues from the count of existing files with the same extension in the destination (collision-safe as before).
+- **Settings**: the `RenameScheme` setting/combo remains for compatibility, but both options now produce the same combined format. Combo example texts updated (`Folder-based — photo_vacation_3.jpg`, `Sequential — photo_vacation_3.jpg`). The `_scheme` field was removed from `IntelligentRenamer` (constructor parameter kept, intentionally unused).
+
+### Verified
+- 11/11 xUnit tests pass (3 renamer tests updated to the new format). Full pipeline via `tools/build.ps1`: build clean (0 warnings), publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.6.exe`). `medial_support.txt` regenerated.
+
 ## Mod 1.0.5 — Update on startup only; About update section removed (v1.0.5)
 
 **Date:** 2026-08-09

@@ -24,7 +24,7 @@ public sealed class IntelligentRenamerTests
         var renamer = new IntelligentRenamer(RenameScheme.FolderBased);
         string result = renamer.GenerateSmartFilePath(source, folder);
 
-        Assert.Equal("vacation_3.jpg", Path.GetFileName(result));
+        Assert.Equal("photo_vacation_3.jpg", Path.GetFileName(result));
     }
 
     [Fact]
@@ -34,25 +34,27 @@ public sealed class IntelligentRenamerTests
         string folder = Path.Combine(tmp.Path, "vacation");
         Directory.CreateDirectory(folder);
         string source = Path.Combine(tmp.Path, "photo.jpg");
-        File.WriteAllBytes(Path.Combine(folder, "vacation_1.jpg"), [1]);
-        File.WriteAllBytes(Path.Combine(folder, "vacation_2.jpg"), [1]);
+        File.WriteAllBytes(Path.Combine(folder, "photo_vacation_1.jpg"), [1]);
+        File.WriteAllBytes(Path.Combine(folder, "photo_vacation_2.jpg"), [1]);
 
         var renamer = new IntelligentRenamer();
         string result = renamer.GenerateSmartFilePath(source, folder);
 
-        Assert.Equal("vacation_3.jpg", Path.GetFileName(result));
+        Assert.Equal("photo_vacation_3.jpg", Path.GetFileName(result));
     }
 
     [Fact]
-    public void SequentialNaming_UsesSourceStem()
+    public void SequentialNaming_UsesSourceStemAndFolder()
     {
         using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "trip");
+        Directory.CreateDirectory(folder);
         string source = Path.Combine(tmp.Path, "my_photo.jpg");
 
         var renamer = new IntelligentRenamer(RenameScheme.Sequential);
-        string result = renamer.GenerateSmartFilePath(source, tmp.Path);
+        string result = renamer.GenerateSmartFilePath(source, folder);
 
-        Assert.Equal("my_photo_1.jpg", Path.GetFileName(result));
+        Assert.Equal("my_photo_trip_1.jpg", Path.GetFileName(result));
     }
 
     [Fact]
