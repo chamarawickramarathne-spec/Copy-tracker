@@ -153,11 +153,6 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Orientation="Horizontal">
                         <Image Source="pack://application:,,,/Assets/smartcopy.ico" Width="42" Height="42"/>
@@ -166,17 +161,7 @@
                             <TextBlock x:Name="txtVersion" Style="{StaticResource Caption}"/>
                         </StackPanel>
                     </StackPanel>
-                    <TextBlock Grid.Row="1" Text="SmartCopy is a high-performance Windows file management system that intercepts copy/paste, renames files intelligently, and transfers at full speed with zero UI freezing." TextWrapping="Wrap" Style="{StaticResource Caption}" Margin="0,14,0,0"/>
-
-                    <Border Grid.Row="3" Style="{StaticResource InfoCard}" Margin="0,20,0,0">
-                        <StackPanel>
-                            <TextBlock Text="Updates (Git-based)" FontWeight="SemiBold"/>
-                            <TextBlock Text="SmartCopy checks for new releases automatically on startup and every 6 hours, then installs and restarts itself. Use the button below to check right now." Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,6,0,12"/>
-                            <Button Click="OnCheckUpdate" Content="Check for updates" Style="{StaticResource BtnBase}" HorizontalAlignment="Left"/>
-                            <ProgressBar x:Name="updateBar" Style="{StaticResource ProgressBarFluent}" Margin="0,12,0,6" Visibility="Collapsed"/>
-                            <TextBlock x:Name="txtUpdateStatus" Style="{StaticResource Caption}"/>
-                        </StackPanel>
-                    </Border>
+                    <TextBlock Grid.Row="1" Text="SmartCopy is a high-performance Windows file management system that intercepts copy/paste, renames files intelligently, and transfers at full speed with zero UI freezing. New versions are downloaded and applied automatically whenever the app starts." TextWrapping="Wrap" Style="{StaticResource Caption}" Margin="0,14,0,0"/>
                 </Grid>
             </TabItem>
         </TabControl>

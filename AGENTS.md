@@ -2,6 +2,18 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.5 — Update on startup only; About update section removed (v1.0.5)
+
+**Date:** 2026-08-09
+
+### What was changed
+- Update check now runs **once at every app start** (≈5s after launch) instead of startup + every 6 hours. `App.StartAutoUpdateLoop` replaced by `App.StartUpdateCheck` (one-shot `DispatcherTimer`); the periodic 6h timer and `_updateTimer` field removed. Download/apply + idle-deferral logic unchanged.
+- **About tab**: the whole "Updates (Git-based)" card is gone (description, manual "Check for updates" button, `updateBar`, `txtUpdateStatus`). About now shows just logo, name, version, and a one-line description that mentions updates install automatically. `MainWindow.OnCheckUpdate` handler removed; unused row definitions collapsed.
+
+### Verified
+- 11/11 xUnit tests pass. Full pipeline via `tools/build.ps1`: build clean, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.5.exe`).
+- **Released via git**: tag `v1.0.5` pushed + GitHub Release `v1.0.5` created with `publish/SmartCopy.exe` asset so installed 1.0.4 copies update on their next start.
+
 ## Mod 1.0.4 — About tab: repo box removed (v1.0.4)
 
 **Date:** 2026-08-09

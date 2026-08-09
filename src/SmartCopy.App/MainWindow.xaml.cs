@@ -113,34 +113,6 @@ public partial class MainWindow : Window
 
     private void OnClearHistory(object sender, RoutedEventArgs e) => _history.Clear();
 
-    private async void OnCheckUpdate(object sender, RoutedEventArgs e)
-    {
-        string repo = _settings.UpdateRepository.Trim();
-        if (string.IsNullOrWhiteSpace(repo)) { txtUpdateStatus.Text = "No update repository configured."; return; }
-
-        txtUpdateStatus.Text = "Checking for updates...";
-        var latest = await _updater.CheckForUpdatesAsync(repo);
-        if (latest is null) { txtUpdateStatus.Text = "You are up to date, or no newer release tag was found."; return; }
-
-        txtUpdateStatus.Text = $"Update available: v{latest}";
-        var answer = MessageBox.Show(this, $"SmartCopy v{latest} is available. Download and install now?",
-            "Update available", MessageBoxButton.YesNo, MessageBoxImage.Information);
-        if (answer != MessageBoxResult.Yes) return;
-
-        updateBar.Visibility = Visibility.Visible;
-        var progress = new Progress<string>(s => txtUpdateStatus.Text = s);
-        try
-        {
-            await _updater.DownloadUpdateAsync(repo, latest, progress);
-            txtUpdateStatus.Text = "Update downloaded — SmartCopy will restart automatically.";
-            ((App)Application.Current).RestartForUpdate();
-        }
-        catch (Exception ex)
-        {
-            txtUpdateStatus.Text = $"Update failed: {ex.Message}";
-        }
-    }
-
     protected override void OnClosing(CancelEventArgs e)
     {
         if (!((App)Application.Current).IsExiting)

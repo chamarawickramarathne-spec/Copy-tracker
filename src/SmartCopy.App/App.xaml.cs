@@ -13,7 +13,6 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private MiniPlayerWindow? _miniPlayer;
     private readonly UpdateService _updater = new();
-    private DispatcherTimer? _updateTimer;
     private SettingsService _settings = new();
     private CancellationTokenSource? _currentCts;
     private string _lastFolder = string.Empty;
@@ -63,25 +62,20 @@ public partial class App : Application
                 "Running in the system tray. Copy files and press Ctrl+V in a folder to smart-copy them.");
         }
 
-        StartAutoUpdateLoop();
+        StartUpdateCheck();
     }
 
-    private void StartAutoUpdateLoop()
+    private void StartUpdateCheck()
     {
         if (!_settings.AutoUpdate || string.IsNullOrWhiteSpace(_settings.UpdateRepository)) return;
 
-        _updateTimer?.Stop();
-        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(6) };
-        _updateTimer.Tick += (_, _) => _ = CheckAndApplyUpdateAsync();
-        _updateTimer.Start();
-
-        var firstCheck = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
-        firstCheck.Tick += (_, _) =>
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        timer.Tick += (_, _) =>
         {
-            firstCheck.Stop();
+            timer.Stop();
             _ = CheckAndApplyUpdateAsync();
         };
-        firstCheck.Start();
+        timer.Start();
     }
 
     private async Task CheckAndApplyUpdateAsync()
@@ -105,7 +99,7 @@ public partial class App : Application
         }
         catch
         {
-            // silent — the update check retries on the next cycle
+            // silent — the update check runs again on the next app start
         }
         finally
         {
