@@ -16,7 +16,7 @@ This file is the modification memory for the SmartCopy application. Every change
 ### Verified
 - 11/11 xUnit tests pass (added 4: multi-file unique destinations for FolderBased, same-stem uniqueness for Sequential, engine E2E copy of 3 same-extension files, duplicate-destination guard).
 - Full pipeline via `tools/build.ps1`: build clean, tests green, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.2.exe`).
-- **Released via git**: changes committed + pushed to `origin/main`, tag `v1.0.2` pushed, GitHub Release `v1.0.2` created with `publish/SmartCopy.exe` as asset (asset name exactly `SmartCopy.exe` so the update URL resolves).
+- **Released via git**: changes committed + pushed to `origin/main`, tag `v1.0.2` pushed, GitHub Release `v1.0.2` created with `publish/SmartCopy.exe` as asset (asset name exactly `SmartCopy.exe` so the update URL resolves). Repo switched to **public** — the anonymous `HttpClient` download used by `UpdateService` requires public (or authenticated) access; anonymous GET of the asset verified `200`.
 
 ## Mod 1.0.1 — Paste interception fixes (v1.0.0)
 
