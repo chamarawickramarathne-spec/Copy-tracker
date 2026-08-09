@@ -43,7 +43,6 @@ public partial class MainWindow : Window
         chkAutoStart.IsChecked = _settings.AutoStart;
         chkStartMinimized.IsChecked = _settings.StartMinimized;
         chkAutoUpdate.IsChecked = _settings.AutoUpdate;
-        txtRepo.Text = _settings.UpdateRepository;
         UpdateLabels();
     }
 
@@ -107,7 +106,6 @@ public partial class MainWindow : Window
         _settings.AutoStart = chkAutoStart.IsChecked == true;
         _settings.StartMinimized = chkStartMinimized.IsChecked == true;
         _settings.AutoUpdate = chkAutoUpdate.IsChecked == true;
-        _settings.UpdateRepository = txtRepo.Text.Trim();
         _settings.Save();
         _settings.ApplyAutoStart();
         txtSettingsStatus.Text = "Settings saved.";
@@ -117,8 +115,8 @@ public partial class MainWindow : Window
 
     private async void OnCheckUpdate(object sender, RoutedEventArgs e)
     {
-        string repo = txtRepo.Text.Trim();
-        if (string.IsNullOrWhiteSpace(repo)) { txtUpdateStatus.Text = "Set a repository (owner/repo) first."; return; }
+        string repo = _settings.UpdateRepository.Trim();
+        if (string.IsNullOrWhiteSpace(repo)) { txtUpdateStatus.Text = "No update repository configured."; return; }
 
         txtUpdateStatus.Text = "Checking for updates...";
         var latest = await _updater.CheckForUpdatesAsync(repo);

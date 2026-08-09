@@ -2,6 +2,17 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.4 — About tab: repo box removed (v1.0.4)
+
+**Date:** 2026-08-09
+
+### What was changed
+- The About tab no longer asks the user to paste an `owner/repo` link. The update card now just explains that updates run automatically (startup + every 6h) and keeps the manual "Check for updates" button. `OnCheckUpdate` reads the repository from `SettingsService.UpdateRepository` (default `chamarawickramarathne-spec/Copy-tracker`) instead of the removed `txtRepo` textbox; `LoadSettings`/`OnSaveSettings` updated accordingly.
+
+### Verified
+- 11/11 xUnit tests pass. Full pipeline via `tools/build.ps1`: build clean, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.4.exe`).
+- **Released via git**: tag `v1.0.4` pushed + GitHub Release `v1.0.4` created with `publish/SmartCopy.exe` asset so installed 1.0.3 copies auto-update.
+
 ## Mod 1.0.3 — Auto-update + version in header (v1.0.3)
 
 **Date:** 2026-08-09
