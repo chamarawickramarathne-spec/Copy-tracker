@@ -14,7 +14,6 @@ public sealed class SettingsService
     public bool AutoStart { get; set; } = true;
     public bool StartMinimized { get; set; } = true;
     public bool OpenFolderWhenDone { get; set; } = true;
-    public int RenameScheme { get; set; } = 0;
     public string UpdateRepository { get; set; } = "chamarawickramarathne-spec/Copy-tracker";
     public bool AutoUpdate { get; set; } = true;
 

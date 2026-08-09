@@ -2,6 +2,22 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.8 — Renumbering fix (count-based, consecutive per batch) + scheme dropdown removed (v1.0.8)
+
+**Date:** 2026-08-09
+
+### What was fixed
+- **Duplicate/gapped numbers when pasting multiple files** (`IntelligentRenamer.GenerateSmartFilePath`): the number was `count-of-same-extension-files + 1`, recomputed independently per file, and the batch's `reserved` set only blocked identical full filenames — so 2 pasted jpgs with different names both got the same number (e.g. `..._chethana_7.jpg` and `..._chethana_7.jpg`), and gaps appeared (`_1` then `_4`). Numbering now:
+  - starts at the **count of existing same-extension files** in the destination (`max(count, 1)`),
+  - collects the trailing numbers used by existing files and by earlier files in the same batch (`TryGetTrailingNumber` parses the `_N` suffix),
+  - increments to the next **free** number per file, so a 2-file batch into a 6-jpg folder yields `..._6.jpg` then `..._7.jpg` (collision-safe via `File.Exists` + reserved set).
+- **"Naming scheme" dropdown removed** (Settings tab): both ComboBox items produced the identical format since v1.0.6, so the dropdown was misleading. Replaced with static text under **Auto-renaming**: `Format: original name_folder name_number` + `e.g. photo_vacation_3.jpg`.
+- **Dead `RenameScheme` setting removed** (`SettingsService.RenameScheme`, `MainWindow.cmbScheme`, and the enum cast in `App.StartTransfer`). `RenameScheme` enum + `IntelligentRenamer` constructor parameter kept for compatibility.
+
+### Verified
+- 13/13 xUnit tests pass (added 2: `FolderWithGaps_NumberContinuesFromFileCount` → `_6`; `BuildItems_DifferentNames_SameBatch_ConsecutiveNumbers` → `_6`/`_7`). Full pipeline via `tools/build.ps1`: build clean, tests green, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.8.exe`). `medial_support.txt` regenerated.
+- **Released via git**: commit + tag `v1.0.8` pushed + GitHub Release `v1.0.8` created with `publish/SmartCopy.exe` asset so installed 1.0.7 copies auto-update.
+
 ## Mod 1.0.7 — Manual "Check for updates" button next to version (v1.0.7)
 
 **Date:** 2026-08-09

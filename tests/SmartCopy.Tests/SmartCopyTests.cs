@@ -44,6 +44,46 @@ public sealed class IntelligentRenamerTests
     }
 
     [Fact]
+    public void FolderWithGaps_NumberContinuesFromFileCount()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "chethana");
+        Directory.CreateDirectory(folder);
+        string[] existing =
+        [
+            "a_chethana_1.jpg", "b_chethana_1.jpg", "c_chethana_1.jpg",
+            "d_chethana_4.jpg", "e_chethana_4.jpg", "f_chethana_4.jpg",
+        ];
+        foreach (string name in existing) File.WriteAllBytes(Path.Combine(folder, name), [1]);
+
+        var renamer = new IntelligentRenamer();
+        string result = renamer.GenerateSmartFilePath(Path.Combine(tmp.Path, "photo.jpg"), folder);
+
+        Assert.Equal("photo_chethana_6.jpg", Path.GetFileName(result));
+    }
+
+    [Fact]
+    public void BuildItems_DifferentNames_SameBatch_ConsecutiveNumbers()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "chethana");
+        Directory.CreateDirectory(folder);
+        string[] existing =
+        [
+            "a_chethana_1.jpg", "b_chethana_1.jpg", "c_chethana_1.jpg",
+            "d_chethana_4.jpg", "e_chethana_4.jpg", "f_chethana_4.jpg",
+        ];
+        foreach (string name in existing) File.WriteAllBytes(Path.Combine(folder, name), [1]);
+
+        var renamer = new IntelligentRenamer();
+        var items = renamer.BuildItems(
+            [Path.Combine(tmp.Path, "photo.jpg"), Path.Combine(tmp.Path, "vacation.jpg")], folder);
+
+        Assert.Equal("photo_chethana_6.jpg", Path.GetFileName(items[0].DestinationPath));
+        Assert.Equal("vacation_chethana_7.jpg", Path.GetFileName(items[1].DestinationPath));
+    }
+
+    [Fact]
     public void SequentialNaming_UsesSourceStemAndFolder()
     {
         using var tmp = new TempDir(MakeDir());

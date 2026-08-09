@@ -197,7 +197,7 @@ public partial class App : Application
         Interlocked.Increment(ref _activeTransfers);
 
         var engine = new TransferEngine(_settings.BufferSize, _settings.ParallelLimit);
-        var renamer = new IntelligentRenamer((RenameScheme)_settings.RenameScheme);
+        var renamer = new IntelligentRenamer();
         var orchestrator = new SmartCopyOrchestrator(engine, renamer);
 
         var progress = new Progress<TransferProgress>(p =>

@@ -114,11 +114,8 @@
                             ValueChanged="OnParallelChanged" Margin="0,6,0,0"/>
 
                     <TextBlock Text="Auto-renaming" FontWeight="SemiBold" FontSize="15" Margin="0,24,0,8"/>
-                    <TextBlock Text="Naming scheme" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
-                    <ComboBox x:Name="cmbScheme" Style="{StaticResource ComboFluent}" Width="300" HorizontalAlignment="Left">
-                        <ComboBoxItem Content="Folder-based — photo_vacation_3.jpg"/>
-                        <ComboBoxItem Content="Sequential — photo_vacation_3.jpg"/>
-                    </ComboBox>
+                    <TextBlock Text="Format: original name_folder name_number" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
+                    <TextBlock Text="e.g. photo_vacation_3.jpg" Style="{StaticResource Caption}" Margin="0,0,0,6"/>
 
                     <CheckBox x:Name="chkOpenFolder" Style="{StaticResource CheckFluent}" Content="Open destination folder when a transfer finishes" Margin="0,16,0,0"/>
                     <CheckBox x:Name="chkAutoStart" Style="{StaticResource CheckFluent}" Content="Start SmartCopy with Windows" Margin="0,10,0,0"/>

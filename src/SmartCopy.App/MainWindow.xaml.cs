@@ -39,7 +39,6 @@ public partial class MainWindow : Window
     {
         sldBuffer.Value = _settings.BufferSizeKb;
         sldParallel.Value = _settings.ParallelLimit;
-        cmbScheme.SelectedIndex = _settings.RenameScheme is 1 ? 1 : 0;
         chkOpenFolder.IsChecked = _settings.OpenFolderWhenDone;
         chkAutoStart.IsChecked = _settings.AutoStart;
         chkStartMinimized.IsChecked = _settings.StartMinimized;
@@ -102,7 +101,6 @@ public partial class MainWindow : Window
 
     private void OnSaveSettings(object sender, RoutedEventArgs e)
     {
-        _settings.RenameScheme = cmbScheme.SelectedIndex == 1 ? 1 : 0;
         _settings.OpenFolderWhenDone = chkOpenFolder.IsChecked == true;
         _settings.AutoStart = chkAutoStart.IsChecked == true;
         _settings.StartMinimized = chkStartMinimized.IsChecked == true;

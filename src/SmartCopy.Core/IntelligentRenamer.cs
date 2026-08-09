@@ -36,28 +36,53 @@ public sealed class IntelligentRenamer
         string folderName = new DirectoryInfo(destinationFolderPath).Name;
         if (string.IsNullOrWhiteSpace(folderName)) folderName = stem;
 
+        var usedNumbers = new HashSet<int>();
         int count = 0;
         try
         {
-            foreach (var _ in Directory.EnumerateFiles(destinationFolderPath, $"*{extension}")) count++;
+            foreach (string file in Directory.EnumerateFiles(destinationFolderPath, $"*{extension}"))
+            {
+                count++;
+                if (TryGetTrailingNumber(Path.GetFileNameWithoutExtension(file), out int number))
+                    usedNumbers.Add(number);
+            }
         }
         catch
         {
             // folder may be temporarily inaccessible; collision check below still protects us
         }
 
-        string newFileName;
+        if (reserved is not null)
+        {
+            foreach (string path in reserved)
+            {
+                if (!Path.GetExtension(path).Equals(extension, StringComparison.OrdinalIgnoreCase)) continue;
+                if (TryGetTrailingNumber(Path.GetFileNameWithoutExtension(path), out int number))
+                    usedNumbers.Add(number);
+            }
+        }
+
+        int nextNumber = Math.Max(count, 1);
         string finalPath;
-        int attempt = count + 1;
         do
         {
-            string baseName = $"{stem}_{folderName}";
-            newFileName = $"{baseName}_{attempt}{extension}";
+            string newFileName = $"{stem}_{folderName}_{nextNumber}{extension}";
             finalPath = Path.Combine(destinationFolderPath, newFileName);
-            attempt++;
+            nextNumber++;
         }
-        while (File.Exists(finalPath) || (reserved is not null && reserved.Contains(finalPath)));
+        while (usedNumbers.Contains(nextNumber - 1) || File.Exists(finalPath) || (reserved is not null && reserved.Contains(finalPath)));
 
         return finalPath;
+    }
+
+    private static bool TryGetTrailingNumber(string fileNameWithoutExtension, out int number)
+    {
+        int separator = fileNameWithoutExtension.LastIndexOf('_');
+        if (separator < 0 || separator == fileNameWithoutExtension.Length - 1)
+        {
+            number = 0;
+            return false;
+        }
+        return int.TryParse(fileNameWithoutExtension[(separator + 1)..], out number);
     }
 }
