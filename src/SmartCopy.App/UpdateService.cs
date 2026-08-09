@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+using SmartCopy.Core;
 
 namespace SmartCopy.App;
 
@@ -27,12 +27,7 @@ public sealed class UpdateService
         await proc.WaitForExitAsync(ct).ConfigureAwait(false);
         if (proc.ExitCode != 0) return null;
 
-        var tags = Regex.Matches(output, @"refs/tags/(?:v)?(\d+\.\d+\.\d+)\^?\{?\}")
-            .Select(m => TryParse(m.Groups[1].Value))
-            .Where(v => v is not null)
-            .Cast<Version>();
-
-        var latest = tags.DefaultIfEmpty(null).Max();
+        var latest = GitTagParser.ParseVersions(output).DefaultIfEmpty(null).Max();
         return latest is not null && latest > CurrentVersion ? latest : null;
     }
 
@@ -88,7 +83,4 @@ public sealed class UpdateService
         var launch = new ProcessStartInfo(script) { UseShellExecute = true, CreateNoWindow = true };
         Process.Start(launch);
     }
-
-    private static Version? TryParse(string text)
-        => Version.TryParse(text, out var v) ? v : null;
 }

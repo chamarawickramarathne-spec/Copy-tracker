@@ -250,6 +250,44 @@ public sealed class TransferEngineTests
     }
 }
 
+public sealed class GitTagParserTests
+{
+    [Fact]
+    public void ParseVersions_HandlesLightweightAndAnnotatedTags()
+    {
+        string output = string.Join(Environment.NewLine,
+        [
+            "03411cf\trefs/tags/v1.0.4",
+            "b1c5fca\trefs/tags/v1.0.4^{}",
+            "49fd5d5\trefs/tags/v1.0.6",
+            "c0f9a08\trefs/tags/v1.0.8",
+        ]);
+
+        var versions = GitTagParser.ParseVersions(output).ToArray();
+
+        Assert.Equal(4, versions.Length);
+        Assert.Equal(new Version(1, 0, 8), versions.Max());
+    }
+
+    [Fact]
+    public void ParseVersions_NoTags_ReturnsEmpty()
+    {
+        Assert.Empty(GitTagParser.ParseVersions(""));
+    }
+
+    [Fact]
+    public void ParseVersions_IgnoresPrereleaseAndNonVersionTags()
+    {
+        string output = string.Join(Environment.NewLine,
+        [
+            "a1b2c3\trefs/tags/v1.0.8-beta",
+            "d4e5f6\trefs/tags/release-candidate",
+        ]);
+
+        Assert.Empty(GitTagParser.ParseVersions(output));
+    }
+}
+
 internal sealed class TempDir : IDisposable
 {
     public string Path { get; }

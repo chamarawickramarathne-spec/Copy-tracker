@@ -1,5 +1,5 @@
 #define MyAppName "SmartCopy"
-#define MyAppVersion "1.0.8"
+#define MyAppVersion "1.0.9"
 #define MyAppPublisher "SmartCopy"
 #define MyAppExeName "SmartCopy.exe"
 

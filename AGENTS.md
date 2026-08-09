@@ -2,6 +2,19 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.9 — Update check fixed: lightweight git tags now detected (v1.0.9)
+
+**Date:** 2026-08-09
+
+### What was fixed
+- **"Check for updates" / auto-update never found a newer release** (`UpdateService.CheckForUpdatesAsync`): the tag regex `refs/tags/(?:v)?(\d+\.\d+\.\d+)\^?\{?\}` required a trailing `}` (the annotated-tag `^{}` peeled line), so **lightweight** tags (`v1.0.6`, `v1.0.7`, `v1.0.8`) produced no match → `git ls-remote` looked "up to date" even when a newer release existed. Tags `v1.0.4`/`v1.0.5` happened to be annotated, which is why updates worked up to 1.0.5 and then silently stopped.
+- **Fix**: tag parsing extracted to `GitTagParser` (`src/SmartCopy.Core/GitTagParser.cs`) with a corrected regex `refs/tags/(?:v)?(\d+\.\d+\.\d+)(?:\^\{\})?(?=\s|$)` that matches both lightweight and annotated tags and ignores prerelease tags. `UpdateService` now uses it.
+- **Release policy**: future tags should be created as **annotated** (`git tag -a vX.Y.Z -m "..."`) so even installed copies still running the old buggy regex can detect them.
+
+### Verified
+- 16/16 xUnit tests pass (added 3 `GitTagParserTests`: lightweight+annotated detection → latest `1.0.8`, empty input, prerelease/non-version tags ignored). Full pipeline via `tools/build.ps1`: build clean, tests green, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.9.exe`). `medial_support.txt` regenerated.
+- **Released via git**: commit + **annotated tag** `v1.0.9` pushed + GitHub Release `v1.0.9` created with `publish/SmartCopy.exe` asset so installed copies (incl. old regex builds) auto-update.
+
 ## Mod 1.0.8 — Renumbering fix (count-based, consecutive per batch) + scheme dropdown removed (v1.0.8)
 
 **Date:** 2026-08-09
