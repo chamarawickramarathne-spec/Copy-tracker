@@ -38,6 +38,12 @@ public sealed class UpdateService
 
     public async Task ApplyUpdateAsync(string repository, Version version, IProgress<string> progress, CancellationToken ct = default)
     {
+        await DownloadUpdateAsync(repository, version, progress, ct).ConfigureAwait(false);
+        ScheduleApplyUpdate();
+    }
+
+    public async Task DownloadUpdateAsync(string repository, Version version, IProgress<string> progress, CancellationToken ct = default)
+    {
         string appDir = AppContext.BaseDirectory;
         string exe = Path.Combine(appDir, "SmartCopy.exe");
         if (!File.Exists(exe))
@@ -54,8 +60,15 @@ public sealed class UpdateService
             response.EnsureSuccessStatusCode();
             await response.Content.CopyToAsync(fs, ct).ConfigureAwait(false);
         }
+    }
 
-        progress.Report("Applying update...");
+    public void ScheduleApplyUpdate()
+    {
+        string appDir = AppContext.BaseDirectory;
+        string exe = Path.Combine(appDir, "SmartCopy.exe");
+        string staged = Path.Combine(appDir, "SmartCopy.exe.new");
+        if (!File.Exists(staged))
+            throw new InvalidOperationException("No downloaded update to apply.");
 
         string script = Path.Combine(appDir, "apply_update.cmd");
         string quotedExe = $"\"{exe}\"";
@@ -64,10 +77,12 @@ public sealed class UpdateService
         string lines =
             "@echo off\r\n" +
             "timeout /t 2 /nobreak >nul\r\n" +
-            $"del {quotedExe}\r\n" +
-            $"move /y {quotedStaged} {quotedExe}\r\n" +
+            ":wait\r\n" +
+            $"del /q {quotedExe} >nul 2>&1\r\n" +
+            $"if exist {quotedExe} ( timeout /t 1 /nobreak >nul & goto wait )\r\n" +
+            $"move /y {quotedStaged} {quotedExe} >nul\r\n" +
             $"start \"\" {quotedExe} --tray\r\n" +
-            $"del {quotedScript}\r\n";
+            $"del /q {quotedScript} >nul 2>&1\r\n";
         File.WriteAllText(script, lines);
 
         var launch = new ProcessStartInfo(script) { UseShellExecute = true, CreateNoWindow = true };

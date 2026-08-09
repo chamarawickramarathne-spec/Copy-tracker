@@ -15,7 +15,8 @@ public sealed class SettingsService
     public bool StartMinimized { get; set; } = true;
     public bool OpenFolderWhenDone { get; set; } = true;
     public int RenameScheme { get; set; } = 0;
-    public string UpdateRepository { get; set; } = "";
+    public string UpdateRepository { get; set; } = "chamarawickramarathne-spec/Copy-tracker";
+    public bool AutoUpdate { get; set; } = true;
 
     public int BufferSize => Math.Clamp(BufferSizeKb, 64, 4096) * 1024;
 

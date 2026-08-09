@@ -21,8 +21,14 @@ public partial class MainWindow : Window
         _settings = settings;
         LoadSettings();
         lstHistory.ItemsSource = _history;
-        txtVersion.Text = $"Version {_updater.CurrentVersion}";
+        string version = VersionText(_updater.CurrentVersion);
+        Title = $"SmartCopy {version}";
+        txtAppVersion.Text = version;
+        txtVersion.Text = $"Version {version}";
     }
+
+    private static string VersionText(Version v)
+        => v.Revision > 0 ? v.ToString() : $"{v.Major}.{v.Minor}.{v.Build}";
 
     public void AddHistory(string[] files, string folder, TimeSpan elapsed)
         => _history.Insert(0, new HistoryEntry(
@@ -36,6 +42,7 @@ public partial class MainWindow : Window
         chkOpenFolder.IsChecked = _settings.OpenFolderWhenDone;
         chkAutoStart.IsChecked = _settings.AutoStart;
         chkStartMinimized.IsChecked = _settings.StartMinimized;
+        chkAutoUpdate.IsChecked = _settings.AutoUpdate;
         txtRepo.Text = _settings.UpdateRepository;
         UpdateLabels();
     }
@@ -99,6 +106,7 @@ public partial class MainWindow : Window
         _settings.OpenFolderWhenDone = chkOpenFolder.IsChecked == true;
         _settings.AutoStart = chkAutoStart.IsChecked == true;
         _settings.StartMinimized = chkStartMinimized.IsChecked == true;
+        _settings.AutoUpdate = chkAutoUpdate.IsChecked == true;
         _settings.UpdateRepository = txtRepo.Text.Trim();
         _settings.Save();
         _settings.ApplyAutoStart();
@@ -125,8 +133,9 @@ public partial class MainWindow : Window
         var progress = new Progress<string>(s => txtUpdateStatus.Text = s);
         try
         {
-            await _updater.ApplyUpdateAsync(repo, latest, progress);
-            txtUpdateStatus.Text = "Update installed — SmartCopy will restart automatically.";
+            await _updater.DownloadUpdateAsync(repo, latest, progress);
+            txtUpdateStatus.Text = "Update downloaded — SmartCopy will restart automatically.";
+            ((App)Application.Current).RestartForUpdate();
         }
         catch (Exception ex)
         {

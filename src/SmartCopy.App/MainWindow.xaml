@@ -21,7 +21,10 @@
             </Grid.ColumnDefinitions>
             <Image Source="pack://application:,,,/Assets/smartcopy.ico" Width="34" Height="34" Grid.Column="0"/>
             <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="SmartCopy" Style="{StaticResource H1}" FontSize="20" LineHeight="24"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="txtAppTitle" Text="SmartCopy" Style="{StaticResource H1}" FontSize="20" LineHeight="24"/>
+                    <TextBlock x:Name="txtAppVersion" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="8,2,0,0"/>
+                </StackPanel>
                 <TextBlock Text="Intelligent file transfer &amp; management" Style="{StaticResource Caption}"/>
             </StackPanel>
             <Border Grid.Column="3" CornerRadius="20" Background="#1A16C784" Padding="10,4" VerticalAlignment="Center">
@@ -117,6 +120,7 @@
                     <CheckBox x:Name="chkOpenFolder" Style="{StaticResource CheckFluent}" Content="Open destination folder when a transfer finishes" Margin="0,16,0,0"/>
                     <CheckBox x:Name="chkAutoStart" Style="{StaticResource CheckFluent}" Content="Start SmartCopy with Windows" Margin="0,10,0,0"/>
                     <CheckBox x:Name="chkStartMinimized" Style="{StaticResource CheckFluent}" Content="Start minimized to the system tray" Margin="0,10,0,0"/>
+                    <CheckBox x:Name="chkAutoUpdate" Style="{StaticResource CheckFluent}" Content="Automatically download and apply new versions" Margin="0,10,0,0"/>
 
                     <Button Click="OnSaveSettings" Style="{StaticResource BtnAccent}" Content="Save settings" Width="140" Margin="0,22,0,0" HorizontalAlignment="Left"/>
                     <TextBlock x:Name="txtSettingsStatus" Style="{StaticResource Caption}" Margin="0,10,0,0"/>

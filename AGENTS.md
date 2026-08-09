@@ -2,6 +2,20 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.3 — Auto-update + version in header (v1.0.3)
+
+**Date:** 2026-08-09
+
+### What was added
+- **Automatic updates** (`App.CheckAndApplyUpdateAsync`): on startup (~10s in) and then every 6 hours, SmartCopy silently checks `git ls-remote --tags` against the configured repo. If a newer release exists it auto-downloads the published exe and restarts to apply it (tray balloon shows progress). Controlled by a new **"Automatically download and apply new versions"** setting (`SettingsService.AutoUpdate`, default on). The update runs only when idle — if a transfer is in progress the apply is deferred until it finishes.
+- **Version shown next to app name**: header now shows `SmartCopy 1.0.3` next to the logo (was only in the About tab); window title includes the version too.
+- **Robust apply script** (`UpdateService.ScheduleApplyUpdate`): the swap `.cmd` now waits in a loop until the running exe can be deleted (previously `del` could fail while the app was still running and silently break the update). Split `ApplyUpdateAsync` into `DownloadUpdateAsync` + `ScheduleApplyUpdate`; manual "Check for updates" now downloads then calls `App.RestartForUpdate()` so the swap actually happens.
+- **Default repository** (`SettingsService.UpdateRepository`): defaults to `chamarawickramarathne-spec/Copy-tracker` so auto-update works out of the box.
+
+### Verified
+- 11/11 xUnit tests pass (unchanged suite; feature is UI/update layer). Full pipeline via `tools/build.ps1`: build clean, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.3.exe`).
+- **Released via git**: tag `v1.0.3` pushed + GitHub Release `v1.0.3` created with `publish/SmartCopy.exe` asset so the new auto-update can fetch it.
+
 ## Mod 1.0.2 — Multi-file paste fix: duplicate destination names (v1.0.0)
 
 **Date:** 2026-08-09

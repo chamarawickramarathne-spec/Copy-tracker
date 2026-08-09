@@ -12,10 +12,15 @@ public partial class App : Application
     private GlobalKeyboardHook? _hook;
     private MainWindow? _mainWindow;
     private MiniPlayerWindow? _miniPlayer;
+    private readonly UpdateService _updater = new();
+    private DispatcherTimer? _updateTimer;
     private SettingsService _settings = new();
     private CancellationTokenSource? _currentCts;
     private string _lastFolder = string.Empty;
     private volatile bool _replayingPaste;
+    private int _activeTransfers;
+    private volatile bool _pendingApply;
+    private volatile bool _checkingUpdate;
 
     public bool IsExiting { get; private set; }
 
@@ -57,6 +62,75 @@ public partial class App : Application
             _tray.ShowBalloon("SmartCopy",
                 "Running in the system tray. Copy files and press Ctrl+V in a folder to smart-copy them.");
         }
+
+        StartAutoUpdateLoop();
+    }
+
+    private void StartAutoUpdateLoop()
+    {
+        if (!_settings.AutoUpdate || string.IsNullOrWhiteSpace(_settings.UpdateRepository)) return;
+
+        _updateTimer?.Stop();
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(6) };
+        _updateTimer.Tick += (_, _) => _ = CheckAndApplyUpdateAsync();
+        _updateTimer.Start();
+
+        var firstCheck = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+        firstCheck.Tick += (_, _) =>
+        {
+            firstCheck.Stop();
+            _ = CheckAndApplyUpdateAsync();
+        };
+        firstCheck.Start();
+    }
+
+    private async Task CheckAndApplyUpdateAsync()
+    {
+        if (_checkingUpdate) return;
+        _checkingUpdate = true;
+        try
+        {
+            string repo = _settings.UpdateRepository.Trim();
+            if (string.IsNullOrWhiteSpace(repo)) return;
+
+            var latest = await _updater.CheckForUpdatesAsync(repo);
+            if (latest is null) return;
+
+            var progress = new Progress<string>(s => _tray?.ShowBalloon("SmartCopy Update", s));
+            await _updater.DownloadUpdateAsync(repo, latest, progress);
+
+            _tray?.ShowBalloon("SmartCopy Update", $"SmartCopy {latest} downloaded. Restarting to apply...");
+            _pendingApply = true;
+            if (Interlocked.CompareExchange(ref _activeTransfers, 0, 0) == 0) ApplyPendingUpdate();
+        }
+        catch
+        {
+            // silent — the update check retries on the next cycle
+        }
+        finally
+        {
+            _checkingUpdate = false;
+        }
+    }
+
+    private void ApplyPendingUpdate()
+    {
+        if (!_pendingApply) return;
+        _pendingApply = false;
+        if (Interlocked.CompareExchange(ref _activeTransfers, 0, 0) != 0) return;
+        RestartForUpdate();
+    }
+
+    public void RestartForUpdate()
+    {
+        try { _updater.ScheduleApplyUpdate(); }
+        catch { return; }
+        IsExiting = true;
+        _currentCts?.Cancel();
+        _hook?.Dispose();
+        _tray?.Dispose();
+        _miniPlayer?.Close();
+        Shutdown();
     }
 
     private bool OnInterceptPaste()
@@ -126,6 +200,7 @@ public partial class App : Application
         var cts = new CancellationTokenSource();
         _currentCts = cts;
         _lastFolder = folder;
+        Interlocked.Increment(ref _activeTransfers);
 
         var engine = new TransferEngine(_settings.BufferSize, _settings.ParallelLimit);
         var renamer = new IntelligentRenamer((RenameScheme)_settings.RenameScheme);
@@ -170,6 +245,11 @@ public partial class App : Application
             }
             _miniPlayer?.Fail(message);
             onDone?.Invoke(null);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _activeTransfers);
+            ApplyPendingUpdate();
         }
     }
 
