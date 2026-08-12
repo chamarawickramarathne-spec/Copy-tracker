@@ -296,41 +296,62 @@ public sealed class TransferEngineTests
     }
 }
 
-public sealed class GitTagParserTests
+public sealed class GitHubReleaseInfoTests
 {
+    private const string LatestJson = """
+        {
+          "tag_name": "v1.0.11",
+          "assets": [
+            { "name": "SmartCopy.exe", "state": "uploaded", "browser_download_url": "https://github.com/owner/repo/releases/download/v1.0.11/SmartCopy.exe" },
+            { "name": "SmartCopySetup_1.0.11.exe", "state": "uploaded", "browser_download_url": "https://github.com/owner/repo/releases/download/v1.0.11/SmartCopySetup_1.0.11.exe" }
+          ]
+        }
+        """;
+
     [Fact]
-    public void ParseVersions_HandlesLightweightAndAnnotatedTags()
+    public void GetPublishedVersion_ReturnsVersionWhenAssetUploaded()
     {
-        string output = string.Join(Environment.NewLine,
-        [
-            "03411cf\trefs/tags/v1.0.4",
-            "b1c5fca\trefs/tags/v1.0.4^{}",
-            "49fd5d5\trefs/tags/v1.0.6",
-            "c0f9a08\trefs/tags/v1.0.8",
-        ]);
-
-        var versions = GitTagParser.ParseVersions(output).ToArray();
-
-        Assert.Equal(4, versions.Length);
-        Assert.Equal(new Version(1, 0, 8), versions.Max());
+        Assert.Equal(new Version(1, 0, 11), GitHubReleaseInfo.GetPublishedVersion(LatestJson, "SmartCopy.exe"));
     }
 
     [Fact]
-    public void ParseVersions_NoTags_ReturnsEmpty()
+    public void GetPublishedVersion_ReturnsNullWhenAssetStillUploading()
     {
-        Assert.Empty(GitTagParser.ParseVersions(""));
+        string json = LatestJson.Replace("\"uploaded\"", "\"uploading\"", StringComparison.Ordinal);
+
+        Assert.Null(GitHubReleaseInfo.GetPublishedVersion(json, "SmartCopy.exe"));
     }
 
     [Fact]
-    public void ParseVersions_IgnoresPrereleaseAndNonVersionTags()
+    public void GetPublishedVersion_ReturnsNullWhenAssetMissing()
     {
-        string output = string.Join(Environment.NewLine,
-        [
-            "a1b2c3\trefs/tags/v1.0.8-beta",
-            "d4e5f6\trefs/tags/release-candidate",
-        ]);
+        string json = """{"tag_name":"v1.0.11","assets":[]}""";
 
-        Assert.Empty(GitTagParser.ParseVersions(output));
+        Assert.Null(GitHubReleaseInfo.GetPublishedVersion(json, "SmartCopy.exe"));
+    }
+
+    [Fact]
+    public void GetPublishedVersion_ReturnsNullForInvalidTag()
+    {
+        string json = """{"tag_name":"not-a-version","assets":[]}""";
+
+        Assert.Null(GitHubReleaseInfo.GetPublishedVersion(json, "SmartCopy.exe"));
+    }
+
+    [Fact]
+    public void GetAssetUrl_ReturnsRealDownloadUrlForMatchingAsset()
+    {
+        string? url = GitHubReleaseInfo.GetAssetUrl(LatestJson, "SmartCopy.exe");
+
+        Assert.Equal("https://github.com/owner/repo/releases/download/v1.0.11/SmartCopy.exe", url);
+    }
+
+    [Fact]
+    public void GetAssetUrl_ReturnsNullForMissingOrUploadingAsset()
+    {
+        Assert.Null(GitHubReleaseInfo.GetAssetUrl(LatestJson, "Missing.exe"));
+        string uploading = LatestJson.Replace("\"uploaded\"", "\"uploading\"", StringComparison.Ordinal);
+        Assert.Null(GitHubReleaseInfo.GetAssetUrl(uploading, "SmartCopy.exe"));
     }
 }
 

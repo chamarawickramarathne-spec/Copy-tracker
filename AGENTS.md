@@ -2,6 +2,43 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+---
+
+## ⚠️ RELEASE CHECKLIST — MUST DO EVERY TIME (prevents update 404s)
+
+The app's updater queries the GitHub Releases API (`/releases/latest` + `/releases/tags/vX.Y.Z`) and only downloads when the release **and** its `SmartCopy.exe` asset are fully uploaded. A bare git tag is NOT a release — any download 404s until the release exists. When shipping a version:
+
+1. Bump the version in BOTH `src/SmartCopy.App/SmartCopy.App.csproj` AND `installer/smartcopy.iss` to the SAME new version.
+2. Run the full pipeline: `powershell -ExecutionPolicy Bypass -File tools\build.ps1` (build → tests → publish → installer). Installer must build to `installer\out\SmartCopySetup_{version}.exe`.
+3. Commit everything, then create an **annotated** tag: `git tag -a vX.Y.Z -m "..."`, push `main`, push the tag.
+4. Create the GitHub Release and upload the assets **before** telling anyone it's out:
+   - `publish/SmartCopy.exe` → **REQUIRED** (this is the exact name the updater looks for)
+   - `installer/out/SmartCopySetup.exe` → stable "latest installer" name (previous releases carried it; keep the URL stable)
+   - `installer/out/SmartCopySetup_{version}.exe` → versioned installer
+5. **VERIFY the assets are downloadable (must be `200`) before announcing:**
+   `Invoke-WebRequest -Method Head https://github.com/chamarawickramarathne-spec/Copy-tracker/releases/download/vX.Y.Z/SmartCopy.exe`
+   — repeat for `SmartCopySetup.exe`. Anything other than `200` means the release isn't ready and installed copies will fail to update.
+6. The 72 MB `SmartCopy.exe` takes ~1 min to upload — the updater automatically waits (asset state `uploading` is ignored), but the checklist step 5 is the manual guarantee.
+
+---
+
+## Mod 1.0.12 — Update 404 fix: updater resolves real release assets via GitHub API (v1.0.12)
+
+**Date:** 2026-08-12
+
+### What was fixed
+- **Download 404s on every fresh release.** `UpdateService` used `git ls-remote --tags` (only sees tags) and then *assumed* a download URL existed at `https://github.com/{repo}/releases/download/v{version}/SmartCopy.exe`. In the window between "tag pushed" and "GitHub Release + asset fully uploaded", installed copies hit the new tag, tried to download, and got **404**. The same happened any time an asset was renamed/absent (e.g. `SmartCopySetup.exe` missing from a release) — hardcoded URLs break the instant a name changes.
+- **`UpdateService` now uses the GitHub Releases API** (`src/SmartCopy.App/UpdateService.cs`):
+  - `CheckForUpdatesAsync` → `GET /releases/latest`. This endpoint only ever returns a **fully published release** (never a bare tag), so the app can't offer an update that doesn't exist. It also skips any release whose `SmartCopy.exe` asset is missing or still `uploading`.
+  - `DownloadUpdateAsync` → `ResolveAssetUrlAsync` → `GET /releases/tags/v{version}`, then reads the real `browser_download_url` of the `SmartCopy.exe` asset instead of a constructed path. A missing release/asset now throws a clear message ("Release vX.Y.Z is not published yet…") instead of a raw 404.
+  - Shared `HttpClient` (10-min timeout, GitHub `User-Agent`); pure parser extracted to `GitHubReleaseInfo` (public static, testable).
+- **Removed dead code**: `GitTagParser` (`src/SmartCopy.Core/GitTagParser.cs`) deleted — no longer used after switching from git tags to the Releases API. The `git` executable is no longer required on the target machine for updates.
+
+### Verified
+- 24/24 xUnit tests pass (removed 3 `GitTagParserTests`, added 6 `GitHubReleaseInfoTests`: version returned when asset uploaded, skipped while `uploading`, skipped when missing/invalid tag, asset URL resolved from real JSON). Full pipeline via `tools/build.ps1`: build clean (0 warnings), tests green, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.12.exe`). `medial_support.txt` regenerated.
+- **Live API check**: `/releases/latest` returned `v1.0.11` with `SmartCopy.exe` state `uploaded` + valid `browser_download_url`; `/releases/tags/v1.0.11` resolved the same; a bogus `/releases/tags/v9.9.9` returned 404 → clear-message path. Since 1.0.12 = current, the app correctly reports "up to date".
+- **Released via git**: commit + **annotated tag** `v1.0.12` pushed + GitHub Release `v1.0.12` created with `publish/SmartCopy.exe`, `SmartCopySetup.exe`, and `SmartCopySetup_1.0.12.exe` assets, each HEAD-verified `200` per the checklist above.
+
 ## Mod 1.0.11 — Update fix: empty repository now falls back to default (v1.0.11)
 
 **Date:** 2026-08-12
