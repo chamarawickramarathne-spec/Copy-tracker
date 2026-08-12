@@ -1,3 +1,4 @@
+using SmartCopy.App;
 using SmartCopy.Core;
 
 namespace SmartCopy.Tests;
@@ -330,6 +331,23 @@ public sealed class GitTagParserTests
         ]);
 
         Assert.Empty(GitTagParser.ParseVersions(output));
+    }
+}
+
+public sealed class SettingsServiceTests
+{
+    [Fact]
+    public void ResolveRepository_Empty_FallsBackToDefault()
+    {
+        Assert.Equal(SettingsService.DefaultUpdateRepository, SettingsService.ResolveRepository(""));
+        Assert.Equal(SettingsService.DefaultUpdateRepository, SettingsService.ResolveRepository(null));
+        Assert.Equal(SettingsService.DefaultUpdateRepository, SettingsService.ResolveRepository("   "));
+    }
+
+    [Fact]
+    public void ResolveRepository_Configured_ReturnsTrimmedValue()
+    {
+        Assert.Equal("owner/repo", SettingsService.ResolveRepository("  owner/repo  "));
     }
 }
 

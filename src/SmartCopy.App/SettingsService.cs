@@ -15,11 +15,16 @@ public sealed class SettingsService
     public bool AutoStart { get; set; } = true;
     public bool StartMinimized { get; set; } = true;
     public bool OpenFolderWhenDone { get; set; } = true;
-    public string UpdateRepository { get; set; } = "chamarawickramarathne-spec/Copy-tracker";
+    public string UpdateRepository { get; set; } = DefaultUpdateRepository;
     public bool AutoUpdate { get; set; } = true;
     public RenameFormat RenameFormat { get; set; } = RenameFormat.UnderscoreWithName;
 
+    public const string DefaultUpdateRepository = "chamarawickramarathne-spec/Copy-tracker";
+
     public int BufferSize => Math.Clamp(BufferSizeKb, 64, 4096) * 1024;
+
+    public static string ResolveRepository(string? configured)
+        => string.IsNullOrWhiteSpace(configured) ? DefaultUpdateRepository : configured.Trim();
 
     public static SettingsService Load()
     {
@@ -28,7 +33,16 @@ public sealed class SettingsService
             if (File.Exists(FilePath))
             {
                 var loaded = JsonSerializer.Deserialize<SettingsService>(File.ReadAllText(FilePath));
-                if (loaded is not null) return loaded;
+                if (loaded is not null)
+                {
+                    string resolved = ResolveRepository(loaded.UpdateRepository);
+                    if (!string.Equals(resolved, loaded.UpdateRepository, StringComparison.Ordinal))
+                    {
+                        loaded.UpdateRepository = resolved;
+                        loaded.Save();
+                    }
+                    return loaded;
+                }
             }
         }
         catch

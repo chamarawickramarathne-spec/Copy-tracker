@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SmartCopy.Core\SmartCopy.Core.csproj" />
+    <ProjectReference Include="..\..\src\SmartCopy.App\SmartCopy.App.csproj" />
   </ItemGroup>
 
 </Project>

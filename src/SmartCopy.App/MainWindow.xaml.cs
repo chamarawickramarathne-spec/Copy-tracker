@@ -116,8 +116,7 @@ public partial class MainWindow : Window
 
     private async void OnCheckUpdate(object sender, RoutedEventArgs e)
     {
-        string repo = _settings.UpdateRepository.Trim();
-        if (string.IsNullOrWhiteSpace(repo)) return;
+        string repo = SettingsService.ResolveRepository(_settings.UpdateRepository);
 
         btnUpdate.IsEnabled = false;
         btnUpdate.Content = "Checking...";

@@ -2,6 +2,20 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.11 — Update fix: empty repository now falls back to default (v1.0.11)
+
+**Date:** 2026-08-12
+
+### What was fixed
+- **Updates silently never ran when `settings.json` had an empty repository** (`"UpdateRepository": ""`). Any install that saved settings before the default repo existed (or had the value cleared) was permanently stuck: auto-update bailed at `App.StartUpdateCheck` (`if (string.IsNullOrWhiteSpace(UpdateRepository)) return;`) and the manual "Check for updates" button returned with no feedback. Since Mod 1.0.4 removed the repo textbox, there was no UI to fix it.
+- **`SettingsService.ResolveRepository`** (`src/SmartCopy.App/SettingsService.cs`): new pure helper that returns `SettingsService.DefaultUpdateRepository` (`chamarawickramarathne-spec/Copy-tracker`) when the configured value is null/whitespace, otherwise the trimmed value. All consumers now use it: `App.StartUpdateCheck` (no longer needs the repo guard), `App.CheckAndApplyUpdateAsync`, and `MainWindow.OnCheckUpdate`.
+- **Self-healing settings**: `SettingsService.Load()` now resolves the repository after deserializing and, if it was empty, persists the default back to `settings.json` — so stale installs fix themselves on next launch.
+- **Manual button no longer silent**: with the fallback in place the button always has a usable repo, so it never returns without feedback (`Checking...`/`Up to date`/`Downloading…`/`Check failed`).
+
+### Verified
+- 21/21 xUnit tests pass (added 2 `SettingsServiceTests`: empty/null/whitespace fall back to default, configured value is trimmed; test project now references `SmartCopy.App`). Full pipeline via `tools/build.ps1`: build clean (0 warnings), tests green, publish OK. Installer rebuilt on retry (`installer/out/SmartCopySetup_1.0.11.exe`) — first attempt hit a transient antivirus `EndUpdateResource` lock on the Setup exe, retried clean. `medial_support.txt` regenerated.
+- **Released via git**: commit + **annotated tag** `v1.0.11` pushed + GitHub Release `v1.0.11` created with `publish/SmartCopy.exe` asset so installed 1.0.10 copies (incl. the empty-repo ones) auto-update.
+
 ## Mod 1.0.10 — Rename format dropdown: 3 user-selectable formats (v1.0.10)
 
 **Date:** 2026-08-12

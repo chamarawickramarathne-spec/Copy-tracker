@@ -67,7 +67,7 @@ public partial class App : Application
 
     private void StartUpdateCheck()
     {
-        if (!_settings.AutoUpdate || string.IsNullOrWhiteSpace(_settings.UpdateRepository)) return;
+        if (!_settings.AutoUpdate) return;
 
         var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         timer.Tick += (_, _) =>
@@ -84,8 +84,7 @@ public partial class App : Application
         _checkingUpdate = true;
         try
         {
-            string repo = _settings.UpdateRepository.Trim();
-            if (string.IsNullOrWhiteSpace(repo)) return;
+            string repo = SettingsService.ResolveRepository(_settings.UpdateRepository);
 
             var latest = await _updater.CheckForUpdatesAsync(repo);
             if (latest is null) return;
