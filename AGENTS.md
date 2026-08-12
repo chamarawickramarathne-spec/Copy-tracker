@@ -2,6 +2,22 @@
 
 This file is the modification memory for the SmartCopy application. Every change bumps a mod number and adds a new entry. Versioning starts at 1.0.0.
 
+## Mod 1.0.10 — Rename format dropdown: 3 user-selectable formats (v1.0.10)
+
+**Date:** 2026-08-12
+
+### What was changed
+- **Rename format is now a user setting** (Settings tab → Auto-renaming → **Rename format** dropdown, `cmbRenameFormat`), persisted to `settings.json` as `SettingsService.RenameFormat`. Previously every format was hardcoded to `<name>_<folder>_<number>`. The three options:
+  1. `name_folder_number` — `photo_vacation_3.jpg` (`RenameFormat.UnderscoreWithName`, the existing default)
+  2. `name folder number` — `photo vacation 3.jpg` (`RenameFormat.SpaceWithName`)
+  3. `folder number` — `vacation 3.jpg` (`RenameFormat.SpaceFolderNumber`)
+- **`RenameScheme` enum replaced** (`FolderBased`/`Sequential`, dead since v1.0.6) with `RenameFormat` in `IntelligentRenamer`. Constructor now `IntelligentRenamer(RenameFormat format = RenameFormat.UnderscoreWithName)` and actually uses the format (`BuildFileName` switch). `App.StartTransfer` passes `_settings.RenameFormat`.
+- **`TryGetTrailingNumber` generalized** to detect a trailing number after the last `_` **or** space, so existing space-formatted files (`vacation 3.jpg`) contribute to the number pool — keeps consecutive batch numbering (e.g. `vacation 7.jpg` → `vacation 8.jpg`) and collision safety in all formats. `MainWindow.LoadSettings`/`OnSaveSettings` wired to the new combo.
+
+### Verified
+- 19/19 xUnit tests pass (updated `RenameScheme.*` → `RenameFormat.UnderscoreWithName`; added 3: `SpaceWithName_UsesSpaces`, `SpaceFolderNumber_UsesFolderAndNumberOnly`, `SpaceFolderNumber_Batch_ConsecutiveNumbers`). Full pipeline via `tools/build.ps1`: build clean (0 warnings), tests green, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.10.exe`). `medial_support.txt` regenerated.
+- **Released via git**: commit + tag `v1.0.10` pushed + GitHub Release `v1.0.10` created with `publish/SmartCopy.exe` asset so installed 1.0.9 copies auto-update.
+
 ## Mod 1.0.9 — Update check fixed: lightweight git tags now detected (v1.0.9)
 
 **Date:** 2026-08-09

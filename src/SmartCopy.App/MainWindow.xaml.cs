@@ -43,6 +43,7 @@ public partial class MainWindow : Window
         chkAutoStart.IsChecked = _settings.AutoStart;
         chkStartMinimized.IsChecked = _settings.StartMinimized;
         chkAutoUpdate.IsChecked = _settings.AutoUpdate;
+        cmbRenameFormat.SelectedIndex = (int)_settings.RenameFormat;
         UpdateLabels();
     }
 
@@ -105,6 +106,7 @@ public partial class MainWindow : Window
         _settings.AutoStart = chkAutoStart.IsChecked == true;
         _settings.StartMinimized = chkStartMinimized.IsChecked == true;
         _settings.AutoUpdate = chkAutoUpdate.IsChecked == true;
+        _settings.RenameFormat = (RenameFormat)cmbRenameFormat.SelectedIndex;
         _settings.Save();
         _settings.ApplyAutoStart();
         txtSettingsStatus.Text = "Settings saved.";

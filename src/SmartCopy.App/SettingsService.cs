@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SmartCopy.Core;
 
 namespace SmartCopy.App;
 
@@ -16,6 +17,7 @@ public sealed class SettingsService
     public bool OpenFolderWhenDone { get; set; } = true;
     public string UpdateRepository { get; set; } = "chamarawickramarathne-spec/Copy-tracker";
     public bool AutoUpdate { get; set; } = true;
+    public RenameFormat RenameFormat { get; set; } = RenameFormat.UnderscoreWithName;
 
     public int BufferSize => Math.Clamp(BufferSizeKb, 64, 4096) * 1024;
 

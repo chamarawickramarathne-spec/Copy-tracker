@@ -1,16 +1,19 @@
 namespace SmartCopy.Core;
 
-public enum RenameScheme
+public enum RenameFormat
 {
-    FolderBased = 0,
-    Sequential = 1,
+    UnderscoreWithName = 0,
+    SpaceWithName = 1,
+    SpaceFolderNumber = 2,
 }
 
 public sealed class IntelligentRenamer
 {
-    public IntelligentRenamer(RenameScheme scheme = RenameScheme.FolderBased)
+    private readonly RenameFormat _format;
+
+    public IntelligentRenamer(RenameFormat format = RenameFormat.UnderscoreWithName)
     {
-        _ = scheme;
+        _format = format;
     }
 
     public IReadOnlyList<TransferItem> BuildItems(IEnumerable<string> sourcePaths, string destinationFolder)
@@ -66,7 +69,7 @@ public sealed class IntelligentRenamer
         string finalPath;
         do
         {
-            string newFileName = $"{stem}_{folderName}_{nextNumber}{extension}";
+            string newFileName = BuildFileName(stem, folderName, nextNumber, extension);
             finalPath = Path.Combine(destinationFolderPath, newFileName);
             nextNumber++;
         }
@@ -75,9 +78,16 @@ public sealed class IntelligentRenamer
         return finalPath;
     }
 
+    private string BuildFileName(string stem, string folderName, int number, string extension) => _format switch
+    {
+        RenameFormat.SpaceWithName => $"{stem} {folderName} {number}{extension}",
+        RenameFormat.SpaceFolderNumber => $"{folderName} {number}{extension}",
+        _ => $"{stem}_{folderName}_{number}{extension}",
+    };
+
     private static bool TryGetTrailingNumber(string fileNameWithoutExtension, out int number)
     {
-        int separator = fileNameWithoutExtension.LastIndexOf('_');
+        int separator = Math.Max(fileNameWithoutExtension.LastIndexOf('_'), fileNameWithoutExtension.LastIndexOf(' '));
         if (separator < 0 || separator == fileNameWithoutExtension.Length - 1)
         {
             number = 0;

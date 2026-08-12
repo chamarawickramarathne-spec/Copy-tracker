@@ -21,7 +21,7 @@ public sealed class IntelligentRenamerTests
         File.WriteAllBytes(Path.Combine(folder, "existing_1.jpg"), [1, 2, 3]);
         File.WriteAllBytes(Path.Combine(folder, "existing_2.jpg"), [1, 2, 3]);
 
-        var renamer = new IntelligentRenamer(RenameScheme.FolderBased);
+        var renamer = new IntelligentRenamer(RenameFormat.UnderscoreWithName);
         string result = renamer.GenerateSmartFilePath(source, folder);
 
         Assert.Equal("photo_vacation_3.jpg", Path.GetFileName(result));
@@ -91,10 +91,55 @@ public sealed class IntelligentRenamerTests
         Directory.CreateDirectory(folder);
         string source = Path.Combine(tmp.Path, "my_photo.jpg");
 
-        var renamer = new IntelligentRenamer(RenameScheme.Sequential);
+        var renamer = new IntelligentRenamer(RenameFormat.UnderscoreWithName);
         string result = renamer.GenerateSmartFilePath(source, folder);
 
         Assert.Equal("my_photo_trip_1.jpg", Path.GetFileName(result));
+    }
+
+    [Fact]
+    public void SpaceWithName_UsesSpaces()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "vacation");
+        Directory.CreateDirectory(folder);
+        string source = Path.Combine(tmp.Path, "photo.jpg");
+
+        var renamer = new IntelligentRenamer(RenameFormat.SpaceWithName);
+        string result = renamer.GenerateSmartFilePath(source, folder);
+
+        Assert.Equal("photo vacation 1.jpg", Path.GetFileName(result));
+    }
+
+    [Fact]
+    public void SpaceFolderNumber_UsesFolderAndNumberOnly()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "vacation");
+        Directory.CreateDirectory(folder);
+        string source = Path.Combine(tmp.Path, "photo.jpg");
+
+        var renamer = new IntelligentRenamer(RenameFormat.SpaceFolderNumber);
+        string result = renamer.GenerateSmartFilePath(source, folder);
+
+        Assert.Equal("vacation 1.jpg", Path.GetFileName(result));
+    }
+
+    [Fact]
+    public void SpaceFolderNumber_Batch_ConsecutiveNumbers()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "vacation");
+        Directory.CreateDirectory(folder);
+        for (int i = 1; i <= 6; i++)
+            File.WriteAllBytes(Path.Combine(folder, $"a_vacation_{i}.jpg"), [1]);
+
+        var renamer = new IntelligentRenamer(RenameFormat.SpaceFolderNumber);
+        var items = renamer.BuildItems(
+            [Path.Combine(tmp.Path, "photo.jpg"), Path.Combine(tmp.Path, "trip.jpg")], folder);
+
+        Assert.Equal("vacation 7.jpg", Path.GetFileName(items[0].DestinationPath));
+        Assert.Equal("vacation 8.jpg", Path.GetFileName(items[1].DestinationPath));
     }
 
     [Fact]
@@ -122,7 +167,7 @@ public sealed class IntelligentRenamerTests
             Path.Combine(tmp.Path, "c.jpg"),
         ];
 
-        var renamer = new IntelligentRenamer(RenameScheme.FolderBased);
+        var renamer = new IntelligentRenamer(RenameFormat.UnderscoreWithName);
         var items = renamer.BuildItems(sources, folder);
 
         Assert.Equal(3, items.Count);
@@ -139,7 +184,7 @@ public sealed class IntelligentRenamerTests
         Directory.CreateDirectory(folderB);
         string[] sources = [Path.Combine(folderA, "photo.jpg"), Path.Combine(folderB, "photo.jpg")];
 
-        var renamer = new IntelligentRenamer(RenameScheme.Sequential);
+        var renamer = new IntelligentRenamer(RenameFormat.UnderscoreWithName);
         var items = renamer.BuildItems(sources, tmp.Path);
 
         Assert.Equal(2, items.Count);
@@ -219,7 +264,7 @@ public sealed class TransferEngineTests
             File.WriteAllBytes(Path.Combine(src.Path, $"img{i}.jpg"), bytes);
         }
 
-        var items = new IntelligentRenamer(RenameScheme.FolderBased).BuildItems(
+        var items = new IntelligentRenamer(RenameFormat.UnderscoreWithName).BuildItems(
             Directory.GetFiles(src.Path, "*.jpg"), dst.Path);
         var engine = new TransferEngine(parallelLimit: 4);
 
