@@ -22,6 +22,19 @@ The app's updater queries the GitHub Releases API (`/releases/latest` + `/releas
 
 ---
 
+## Mod 1.0.13 — Version-bump release to validate the end-to-end update process (v1.0.13)
+
+**Date:** 2026-08-12
+
+### What was changed
+- **No code changes** — identical codebase to 1.0.12, released under a new version id specifically to exercise the full update path on installed 1.0.12 copies (check → find newer release → download `SmartCopy.exe` asset → swap + restart).
+- Version bumped in `src/SmartCopy.App/SmartCopy.App.csproj` (1.0.13/1.0.13.0) and `installer/smartcopy.iss` (`MyAppVersion "1.0.13"`).
+- `.gitignore`: added stray root `cmd.exe` (unrelated leftover, untracked) so the repo stays application-only.
+
+### Verified
+- 24/24 xUnit tests pass. Full pipeline via `tools/build.ps1`: build clean (0 warnings), tests green, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.13.exe`). `medial_support.txt` regenerated.
+- **Released via git**: commit + **annotated tag** `v1.0.13` pushed + GitHub Release `v1.0.13` created with `publish/SmartCopy.exe`, `SmartCopySetup.exe`, and `SmartCopySetup_1.0.13.exe` assets, each HEAD-verified `200` per the checklist above.
+
 ## Mod 1.0.12 — Update 404 fix: updater resolves real release assets via GitHub API (v1.0.12)
 
 **Date:** 2026-08-12
