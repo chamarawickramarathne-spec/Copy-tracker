@@ -18,6 +18,7 @@ public sealed class TransferEngine
 
     public async Task<IReadOnlyList<string>> CopyAsync(
         IReadOnlyList<TransferItem> items,
+        bool isMove = false,
         IProgress<TransferProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -36,6 +37,7 @@ public sealed class TransferEngine
         long total = items.Sum(i => TryGetLength(i.SourcePath));
         var aggregator = new ProgressAggregator(total);
         var completed = new ConcurrentQueue<string>();
+        var copiedSources = new ConcurrentQueue<string>();
         var failures = new ConcurrentQueue<(TransferItem Item, Exception Error)>();
         using var throttle = new SemaphoreSlim(_parallelLimit);
         int done = 0;
@@ -49,6 +51,7 @@ public sealed class TransferEngine
                     () => Volatile.Read(ref done),
                     () => Interlocked.Increment(ref done),
                     items.Count, progress, cancellationToken).ConfigureAwait(false);
+                copiedSources.Enqueue(item.SourcePath);
                 completed.Enqueue(item.DestinationPath);
             }
             catch (OperationCanceledException)
@@ -81,6 +84,15 @@ public sealed class TransferEngine
             var errors = failures.Select(f => new IOException(
                 $"'{f.Item.SourcePath}' -> '{f.Item.DestinationPath}': {f.Error.Message}", f.Error));
             throw new AggregateException("One or more files failed to copy.", errors);
+        }
+
+        if (isMove)
+        {
+            foreach (string src in copiedSources)
+            {
+                try { File.Delete(src); }
+                catch { /* copy succeeded — source delete is best-effort */ }
+            }
         }
 
         progress?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, completed: true));

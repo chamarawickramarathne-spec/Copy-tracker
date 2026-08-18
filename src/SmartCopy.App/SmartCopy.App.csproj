@@ -21,9 +21,9 @@
     <ApplicationIcon>Assets\smartcopy.ico</ApplicationIcon>
     <AssemblyName>SmartCopy</AssemblyName>
     <RootNamespace>SmartCopy.App</RootNamespace>
-    <Version>1.0.13</Version>
-    <AssemblyVersion>1.0.13.0</AssemblyVersion>
-    <FileVersion>1.0.13.0</FileVersion>
+    <Version>1.0.14</Version>
+    <AssemblyVersion>1.0.14.0</AssemblyVersion>
+    <FileVersion>1.0.14.0</FileVersion>
     <Product>SmartCopy</Product>
     <Description>Intelligent file transfer and management system for Windows.</Description>
     <Authors>SmartCopy</Authors>

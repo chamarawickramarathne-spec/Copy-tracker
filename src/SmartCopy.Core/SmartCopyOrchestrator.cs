@@ -18,12 +18,13 @@ public sealed class SmartCopyOrchestrator
     public async Task<SmartCopyResult> ExecuteAsync(
         IReadOnlyList<string> sourceFiles,
         string destinationFolder,
+        bool isMove = false,
         IProgress<TransferProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         var items = _renamer.BuildItems(sourceFiles, destinationFolder);
         var clock = Stopwatch.StartNew();
-        var copied = await _engine.CopyAsync(items, progress, cancellationToken);
+        var copied = await _engine.CopyAsync(items, isMove, progress, cancellationToken);
         clock.Stop();
         return new SmartCopyResult(copied, destinationFolder, clock.Elapsed);
     }

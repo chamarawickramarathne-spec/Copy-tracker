@@ -4,6 +4,30 @@ This file is the modification memory for the SmartCopy application. Every change
 
 ---
 
+## Mod 1.0.14 — Cut+paste now moves files instead of copying (v1.0.14)
+
+**Date:** 2026-08-18
+
+### What was fixed
+- **Cut+paste (Ctrl+X then Ctrl+V) now moves files** instead of silently copying them. Previously the app always copied regardless of clipboard operation because it only read `CF_HDROP` (file paths) and ignored the cut/copy indicator stored in the `"Preferred DropEffect"` clipboard format.
+- **`ClipboardService`** (`src/SmartCopy.Core/ClipboardService.cs`): new `ClipboardFileResult` record (`Files`, `IsCut`). After reading `CF_HDROP`, the service now also queries `GetClipboardData(RegisterClipboardFormat("Preferred DropEffect"))` — a DWORD value of `2` means `DROPEFFECT_MOVE` (cut), `1` means `DROPEFFECT_COPY`. Old `TryGetFileDropList()` replaced by `TryGetClipboardFiles()`.
+- **`NativeMethods`** (`src/SmartCopy.Core/NativeMethods.cs`): added P/Invoke for `RegisterClipboardFormat`, `GlobalLock`, `GlobalUnlock`.
+- **`App.OnInterceptPaste`** (`src/SmartCopy.App/App.xaml.cs`): reads `ClipboardFileResult` instead of bare file list, threads `isCut` through `ResolveAndTransfer` → `StartTransfer` → orchestrator.
+- **`SmartCopyOrchestrator.ExecuteAsync`**: new `isMove` parameter forwarded to engine.
+- **`TransferEngine.CopyAsync`** (`src/SmartCopy.Core/TransferEngine.cs`): new `isMove` parameter. Source files are only deleted **after the entire batch succeeds** — if any file in the batch fails, no sources are deleted (safe fallback: copy succeeded files remain in both locations, failed copies never existed at destination).
+- **`StartTransfer`** now accepts `bool isCut = false` (backward-compatible).
+
+### Safety
+- Source deletion is batch-scoped: all copies must succeed before any source is deleted. A single failure in a batch means zero deletions.
+- Source deletion is best-effort: if `File.Delete` fails (e.g. file locked), the copy is still considered successful.
+- Ctrl+C + Ctrl+V behavior unchanged (copy only, `IsCut = false`).
+
+### Verified
+- 26/26 xUnit tests pass (added 2: `MoveFile_CopiesAndDeletesSource`, `MoveFile_FailedCopy_DoesNotDeleteSource`). Full pipeline via `tools/build.ps1`: build clean (0 warnings), tests green, publish OK, installer rebuilt (`installer/out/SmartCopySetup_1.0.14.exe`). `medial_support.txt` regenerated.
+- Version bumped in `SmartCopy.App.csproj` (1.0.14/1.0.14.0) and `installer/smartcopy.iss` (`MyAppVersion "1.0.14"`).
+
+---
+
 ## ⚠️ RELEASE CHECKLIST — MUST DO EVERY TIME (prevents update 404s)
 
 The app's updater queries the GitHub Releases API (`/releases/latest` + `/releases/tags/vX.Y.Z`) and only downloads when the release **and** its `SmartCopy.exe` asset are fully uploaded. A bare git tag is NOT a release — any download 404s until the release exists. When shipping a version:

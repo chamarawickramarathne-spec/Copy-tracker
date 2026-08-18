@@ -226,7 +226,7 @@ public sealed class TransferEngineTests
         var reports = new List<TransferProgress>();
         var progress = new Progress<TransferProgress>(reports.Add);
 
-        await engine.CopyAsync([new TransferItem(sourceFile, Path.Combine(dst.Path, "copy.txt"))], progress);
+        await engine.CopyAsync([new TransferItem(sourceFile, Path.Combine(dst.Path, "copy.txt"))], progress: progress);
 
         Assert.True(reports.Count > 0);
         Assert.True(reports[^1].Completed);
@@ -248,7 +248,7 @@ public sealed class TransferEngineTests
         cts.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            engine.CopyAsync([new TransferItem(sourceFile, Path.Combine(dst.Path, "big.bin"))], null, cts.Token));
+            engine.CopyAsync([new TransferItem(sourceFile, Path.Combine(dst.Path, "big.bin"))], progress: null, cancellationToken: cts.Token));
     }
 
     [Fact]
@@ -293,6 +293,46 @@ public sealed class TransferEngineTests
         };
 
         await Assert.ThrowsAsync<ArgumentException>(() => engine.CopyAsync(items));
+    }
+
+    [Fact]
+    public async Task MoveFile_CopiesAndDeletesSource()
+    {
+        using var src = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_src_" + Guid.NewGuid().ToString("N")));
+        using var dst = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_dst_" + Guid.NewGuid().ToString("N")));
+
+        byte[] payload = [1, 2, 3, 4, 5];
+        string sourceFile = Path.Combine(src.Path, "data.bin");
+        File.WriteAllBytes(sourceFile, payload);
+
+        var engine = new TransferEngine();
+        var copied = await engine.CopyAsync(
+            [new TransferItem(sourceFile, Path.Combine(dst.Path, "data.bin"))], isMove: true);
+
+        Assert.Single(copied);
+        Assert.Equal(payload, File.ReadAllBytes(Path.Combine(dst.Path, "data.bin")));
+        Assert.False(File.Exists(sourceFile), "Source should be deleted after move");
+    }
+
+    [Fact]
+    public async Task MoveFile_FailedCopy_DoesNotDeleteSource()
+    {
+        using var src = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_src_" + Guid.NewGuid().ToString("N")));
+        using var dst = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_dst_" + Guid.NewGuid().ToString("N")));
+
+        byte[] payload = [1, 2, 3];
+        string sourceFile = Path.Combine(src.Path, "data.bin");
+        File.WriteAllBytes(sourceFile, payload);
+
+        var engine = new TransferEngine();
+        var items = new[]
+        {
+            new TransferItem(sourceFile, Path.Combine(dst.Path, "data.bin")),
+            new TransferItem(Path.Combine(src.Path, "missing.bin"), Path.Combine(dst.Path, "missing.bin")),
+        };
+
+        await Assert.ThrowsAsync<AggregateException>(() => engine.CopyAsync(items, isMove: true));
+        Assert.True(File.Exists(sourceFile), "Source must NOT be deleted when copy fails");
     }
 }
 

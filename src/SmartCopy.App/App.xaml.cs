@@ -128,23 +128,20 @@ public partial class App : Application
 
     private bool OnInterceptPaste()
     {
-        var files = ClipboardService.TryGetFileDropList();
-        if (_replayingPaste || files is null || files.Count == 0) return false;
+        var result = ClipboardService.TryGetClipboardFiles();
+        if (_replayingPaste || result is null || result.Files.Count == 0) return false;
 
         IntPtr foreground = NativeMethods.GetForegroundWindow();
         string? windowClass = ExplorerFolderService.GetWindowClassName(foreground);
         if (windowClass is not "CabinetWClass" and not "ExploreWClass") return false;
 
-        // Note: COM (IShellWindows) cannot be called from inside this hook callback
-        // (RPC_E_CANTCALLOUT_ININPUTSYNCCALL), so folder resolution happens on the
-        // UI thread. The paste is suppressed optimistically; if the folder cannot
-        // be resolved we replay Ctrl+V so the normal paste still happens.
-        string[] snapshot = files.ToArray();
-        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => ResolveAndTransfer(snapshot)));
+        string[] snapshot = result.Files.ToArray();
+        bool isCut = result.IsCut;
+        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => ResolveAndTransfer(snapshot, isCut)));
         return true;
     }
 
-    private void ResolveAndTransfer(string[] files)
+    private void ResolveAndTransfer(string[] files, bool isCut)
     {
         IntPtr foreground = NativeMethods.GetForegroundWindow();
         string? windowClass = ExplorerFolderService.GetWindowClassName(foreground);
@@ -157,7 +154,7 @@ public partial class App : Application
             return;
         }
 
-        StartTransfer(files, folder);
+        StartTransfer(files, folder, isCut: isCut);
     }
 
     private void ReplayPaste()
@@ -185,6 +182,7 @@ public partial class App : Application
     public async void StartTransfer(
         string[] files,
         string folder,
+        bool isCut = false,
         Action<TransferProgress>? onProgress = null,
         Action<SmartCopyResult?>? onDone = null)
     {
@@ -209,7 +207,7 @@ public partial class App : Application
 
         try
         {
-            var result = await orchestrator.ExecuteAsync(files, folder, progress, cts.Token);
+            var result = await orchestrator.ExecuteAsync(files, folder, isCut, progress, cts.Token);
             _miniPlayer?.Complete(result.Elapsed);
             _mainWindow?.AddHistory(files, folder, result.Elapsed);
             if (_settings.OpenFolderWhenDone) OpenDestinationFolder();
