@@ -19,10 +19,11 @@ public sealed class IntelligentRenamer
     public IReadOnlyList<TransferItem> BuildItems(IEnumerable<string> sourcePaths, string destinationFolder)
     {
         var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var snapshot = DestinationSnapshot.Scan(destinationFolder);
         var items = new List<TransferItem>();
         foreach (string source in sourcePaths)
         {
-            string destination = GenerateSmartFilePath(source, destinationFolder, reserved);
+            string destination = GenerateSmartFilePath(source, destinationFolder, snapshot, reserved);
             reserved.Add(destination);
             items.Add(new TransferItem(source, destination));
         }
@@ -34,27 +35,23 @@ public sealed class IntelligentRenamer
         string destinationFolderPath,
         ISet<string>? reserved = null)
     {
+        var snapshot = DestinationSnapshot.Scan(destinationFolderPath);
+        return GenerateSmartFilePath(sourceFilePath, destinationFolderPath, snapshot, reserved);
+    }
+
+    private string GenerateSmartFilePath(
+        string sourceFilePath,
+        string destinationFolderPath,
+        DestinationSnapshot snapshot,
+        ISet<string>? reserved)
+    {
         string extension = Path.GetExtension(sourceFilePath);
         string stem = Path.GetFileNameWithoutExtension(sourceFilePath);
         string folderName = new DirectoryInfo(destinationFolderPath).Name;
         if (string.IsNullOrWhiteSpace(folderName)) folderName = stem;
 
-        var usedNumbers = new HashSet<int>();
-        int count = 0;
-        try
-        {
-            foreach (string file in Directory.EnumerateFiles(destinationFolderPath, $"*{extension}"))
-            {
-                count++;
-                if (TryGetTrailingNumber(Path.GetFileNameWithoutExtension(file), out int number))
-                    usedNumbers.Add(number);
-            }
-        }
-        catch
-        {
-            // folder may be temporarily inaccessible; collision check below still protects us
-        }
-
+        ExtensionStats stats = snapshot.StatsFor(extension);
+        var usedNumbers = new HashSet<int>(stats.Numbers);
         if (reserved is not null)
         {
             foreach (string path in reserved)
@@ -65,7 +62,7 @@ public sealed class IntelligentRenamer
             }
         }
 
-        int nextNumber = Math.Max(count, 1);
+        int nextNumber = Math.Max(stats.Count, 1);
         string finalPath;
         do
         {
@@ -94,5 +91,62 @@ public sealed class IntelligentRenamer
             return false;
         }
         return int.TryParse(fileNameWithoutExtension[(separator + 1)..], out number);
+    }
+
+    internal sealed class ExtensionStats
+    {
+        public int Count { get; internal set; }
+        public HashSet<int> Numbers { get; } = new();
+    }
+
+    /// <summary>
+    /// One-shot scan of a destination folder so a whole paste batch needs a single
+    /// directory enumeration instead of one per source file.
+    /// </summary>
+    internal sealed class DestinationSnapshot
+    {
+        private readonly Dictionary<string, ExtensionStats> _byExtension = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ExtensionStats _allFiles = new();
+
+        private DestinationSnapshot() { }
+
+        public static DestinationSnapshot Scan(string destinationFolderPath)
+        {
+            var snapshot = new DestinationSnapshot();
+            try
+            {
+                foreach (string file in Directory.EnumerateFiles(destinationFolderPath))
+                {
+                    string name = Path.GetFileNameWithoutExtension(file);
+                    Record(snapshot._allFiles, name);
+
+                    ExtensionStats stats = snapshot.StatsFor(Path.GetExtension(file));
+                    Record(stats, name);
+                }
+            }
+            catch
+            {
+                // folder may be temporarily inaccessible; collision check below still protects us
+            }
+            return snapshot;
+        }
+
+        public ExtensionStats StatsFor(string extension)
+        {
+            if (extension.Length == 0) return _allFiles;
+            if (!_byExtension.TryGetValue(extension, out var stats))
+            {
+                stats = new ExtensionStats();
+                _byExtension.Add(extension, stats);
+            }
+            return stats;
+        }
+
+        private static void Record(ExtensionStats stats, string fileNameWithoutExtension)
+        {
+            stats.Count++;
+            if (TryGetTrailingNumber(fileNameWithoutExtension, out int number))
+                stats.Numbers.Add(number);
+        }
     }
 }

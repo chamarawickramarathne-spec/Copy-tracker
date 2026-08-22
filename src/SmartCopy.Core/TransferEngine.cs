@@ -1,11 +1,13 @@
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace SmartCopy.Core;
 
 public sealed class TransferEngine
 {
     public const int DefaultBufferSize = 1024 * 1024;
+    private const int ProgressMinIntervalMs = 60;
 
     private readonly int _bufferSize;
     private readonly int _parallelLimit;
@@ -39,6 +41,7 @@ public sealed class TransferEngine
         var completed = new ConcurrentQueue<string>();
         var copiedSources = new ConcurrentQueue<string>();
         var failures = new ConcurrentQueue<(TransferItem Item, Exception Error)>();
+        var reporter = progress is null ? null : new ThrottledProgress(progress);
         using var throttle = new SemaphoreSlim(_parallelLimit);
         int done = 0;
 
@@ -50,7 +53,7 @@ public sealed class TransferEngine
                 await CopyFileAsync(item, aggregator,
                     () => Volatile.Read(ref done),
                     () => Interlocked.Increment(ref done),
-                    items.Count, progress, cancellationToken).ConfigureAwait(false);
+                    items.Count, reporter, cancellationToken).ConfigureAwait(false);
                 copiedSources.Enqueue(item.SourcePath);
                 completed.Enqueue(item.DestinationPath);
             }
@@ -74,13 +77,13 @@ public sealed class TransferEngine
         }
         catch (OperationCanceledException)
         {
-            progress?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, cancelled: true));
+            reporter?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, cancelled: true));
             throw;
         }
 
         if (!failures.IsEmpty)
         {
-            progress?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, failed: true));
+            reporter?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, failed: true));
             var errors = failures.Select(f => new IOException(
                 $"'{f.Item.SourcePath}' -> '{f.Item.DestinationPath}': {f.Error.Message}", f.Error));
             throw new AggregateException("One or more files failed to copy.", errors);
@@ -95,7 +98,7 @@ public sealed class TransferEngine
             }
         }
 
-        progress?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, completed: true));
+        reporter?.Report(aggregator.Snapshot(string.Empty, 0, 0, done, items.Count, completed: true));
         return completed.ToArray();
     }
 
@@ -105,7 +108,7 @@ public sealed class TransferEngine
         Func<int> filesDone,
         Action fileDone,
         int filesTotal,
-        IProgress<TransferProgress>? progress,
+        ThrottledProgress? progress,
         CancellationToken cancellationToken)
     {
         string? dir = Path.GetDirectoryName(item.DestinationPath);
@@ -142,5 +145,35 @@ public sealed class TransferEngine
     {
         try { return new FileInfo(path).Length; }
         catch { return 0; }
+    }
+
+    /// <summary>
+    /// Passes progress through at most every <see cref="ProgressMinIntervalMs"/> so fast disks
+    /// (thousands of chunks per second) don't flood the UI thread with dispatcher posts.
+    /// Final states (completed/cancelled/failed) always pass through.
+    /// </summary>
+    private sealed class ThrottledProgress : IProgress<TransferProgress>
+    {
+        private readonly IProgress<TransferProgress> _inner;
+        private readonly Stopwatch _clock = Stopwatch.StartNew();
+        private long _lastReportMs;
+
+        public ThrottledProgress(IProgress<TransferProgress> inner) => _inner = inner;
+
+        public void Report(TransferProgress value)
+        {
+            if (value.Completed || value.Cancelled || value.Failed)
+            {
+                Volatile.Write(ref _lastReportMs, _clock.ElapsedMilliseconds);
+                _inner.Report(value);
+                return;
+            }
+
+            long now = _clock.ElapsedMilliseconds;
+            long last = Volatile.Read(ref _lastReportMs);
+            if (now - last < ProgressMinIntervalMs) return;
+            if (Interlocked.CompareExchange(ref _lastReportMs, now, last) != last) return;
+            _inner.Report(value);
+        }
     }
 }

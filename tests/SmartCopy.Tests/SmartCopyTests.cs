@@ -191,6 +191,50 @@ public sealed class IntelligentRenamerTests
         Assert.Equal(2, items.Count);
         Assert.Equal(2, items.Select(i => i.DestinationPath).Distinct(StringComparer.OrdinalIgnoreCase).Count());
     }
+
+    [Fact]
+    public void BuildItems_MatchesPerFileGeneration_BatchSnapshotEquivalence()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "vacation");
+        Directory.CreateDirectory(folder);
+        string[] existing = ["a_vacation_1.jpg", "b_vacation_2.jpg", "c.png", "d_vacation_4.jpg"];
+        foreach (string name in existing) File.WriteAllBytes(Path.Combine(folder, name), [1]);
+
+        string[] sources =
+        [
+            Path.Combine(tmp.Path, "photo.jpg"),
+            Path.Combine(tmp.Path, "trip.jpg"),
+            Path.Combine(tmp.Path, "clip.mp4"),
+        ];
+
+        var renamer = new IntelligentRenamer();
+        var items = renamer.BuildItems(sources, folder);
+
+        var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < sources.Length; i++)
+        {
+            string expected = renamer.GenerateSmartFilePath(sources[i], folder, reserved);
+            reserved.Add(expected);
+            Assert.Equal(Path.GetFileName(expected), Path.GetFileName(items[i].DestinationPath));
+        }
+    }
+
+    [Fact]
+    public void ExtensionlessSource_NumberContinuesFromAllFiles()
+    {
+        using var tmp = new TempDir(MakeDir());
+        string folder = Path.Combine(tmp.Path, "data");
+        Directory.CreateDirectory(folder);
+        File.WriteAllBytes(Path.Combine(folder, "readme.txt"), [1]);
+        File.WriteAllBytes(Path.Combine(folder, "notes.txt"), [1]);
+
+        var renamer = new IntelligentRenamer();
+        string result = renamer.GenerateSmartFilePath(Path.Combine(tmp.Path, "archive"), folder);
+
+        // Legacy '*' search-pattern semantics: extensionless sources count every file in the folder.
+        Assert.Equal("archive_data_2", Path.GetFileName(result));
+    }
 }
 
 public sealed class TransferEngineTests
@@ -293,6 +337,30 @@ public sealed class TransferEngineTests
         };
 
         await Assert.ThrowsAsync<ArgumentException>(() => engine.CopyAsync(items));
+    }
+
+    [Fact]
+    public async Task CopyFile_ThrottlesIntermediateProgress_AlwaysReportsCompletion()
+    {
+        using var src = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_src_" + Guid.NewGuid().ToString("N")));
+        using var dst = new TempDir(Path.Combine(Path.GetTempPath(), "smartcopy_dst_" + Guid.NewGuid().ToString("N")));
+
+        byte[] payload = new byte[64 * 1024 * 1024];
+        Random.Shared.NextBytes(payload);
+        string sourceFile = Path.Combine(src.Path, "big.bin");
+        File.WriteAllBytes(sourceFile, payload);
+
+        var engine = new TransferEngine(bufferSize: 64 * 1024, parallelLimit: 1);
+        var reports = new List<TransferProgress>();
+        var progress = new Progress<TransferProgress>(reports.Add);
+
+        await engine.CopyAsync([new TransferItem(sourceFile, Path.Combine(dst.Path, "out.bin"))], progress: progress);
+
+        Assert.True(reports.Count > 0);
+        Assert.True(reports[^1].Completed);
+        // 1024 chunks must never produce 1024 UI-thread posts
+        Assert.True(reports.Count < 1024, $"expected throttled reports but got {reports.Count}");
+        Assert.Equal(payload, File.ReadAllBytes(Path.Combine(dst.Path, "out.bin")));
     }
 
     [Fact]

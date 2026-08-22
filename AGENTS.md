@@ -4,6 +4,32 @@ This file is the modification memory for the SmartCopy application. Every change
 
 ---
 
+## Mod 1.0.15 — Paste latency optimization: 4 hot-path fixes (v1.0.15)
+
+**Date:** 2026-08-22
+
+### What was optimized
+User-reported delay on copy+paste. Four fixes across the paste pipeline, no behavior changes:
+
+1. **Renamer: single directory enumeration per batch** (`IntelligentRenamer`): `BuildItems` previously called `Directory.EnumerateFiles(dest, "*{ext}")` **once per source file** — pasting 20 files into a 500-file folder = 20 full scans (seconds on OneDrive/network folders). Now one scan builds a nested `DestinationSnapshot` (per-extension count + trailing-number sets; extensionless sources keep legacy `*` pattern semantics via an all-files bucket) consumed by an internal `GenerateSmartFilePath` overload. Public API unchanged.
+2. **Slim keyboard hook** (`App.OnInterceptPaste`): clipboard open + 10×15ms retry loop ran **inside the WH_KEYBOARD_LL callback** (~150ms worst case blocking every keystroke system-wide; Windows can silently drop slow hooks). Hook now does only cheap checks (`_replayingPaste`, window class, `IsClipboardFormatAvailable(CF_HDROP)` — new P/Invoke in `NativeMethods`) then suppresses + `BeginInvoke`. Full `TryGetClipboardFiles()` read moved to the UI thread in new async `ResolveAndTransferAsync`; empty read falls back to `ReplayPaste()` (race-safe).
+3. **Throttled progress reports** (`TransferEngine.ThrottledProgress`): progress was reported per 1MB chunk → thousands of dispatcher posts/sec on NVMe → UI stutter during copy. New wrapper passes reports at most every 60ms (thread-safe Interlocked timestamp); final states (completed/cancelled/failed) always pass through.
+4. **ShellWindows COM cached + background resolve** (`ExplorerFolderService`): the COM object was created fresh per paste and enumerated late-bound on the UI thread. Now created once (static lazy cache; failures not cached), and `GetFolderPathForWindowAsync` resolves on a thread-pool thread so the UI never blocks.
+
+### Files / Components
+- `src/SmartCopy.Core/IntelligentRenamer.cs` (snapshot + internal overload)
+- `src/SmartCopy.Core/NativeMethods.cs` (`IsClipboardFormatAvailable`)
+- `src/SmartCopy.App/App.xaml.cs` (hook slim-down, async resolve)
+- `src/SmartCopy.Core/TransferEngine.cs` (`ThrottledProgress`)
+- `src/SmartCopy.Core/ExplorerFolderService.cs` (cache + async)
+- `tests/SmartCopy.Tests/SmartCopyTests.cs`
+
+### Verified
+- 29/29 xUnit tests pass (added 3: batch-snapshot equivalence vs per-file generation, extensionless-source legacy `*` semantics, throttle test asserting 1024-chunk copy produces <1024 reports with final Completed). Naming output byte-identical to v1.0.14.
+- Version bumped in `SmartCopy.App.csproj` (1.0.15/1.0.15.0) and `installer/smartcopy.iss` (`MyAppVersion "1.0.15"`).
+
+---
+
 ## Mod 1.0.14 — Cut+paste now moves files instead of copying (v1.0.14)
 
 **Date:** 2026-08-18

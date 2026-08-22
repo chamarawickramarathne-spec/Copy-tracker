@@ -128,33 +128,41 @@ public partial class App : Application
 
     private bool OnInterceptPaste()
     {
-        var result = ClipboardService.TryGetClipboardFiles();
-        if (_replayingPaste || result is null || result.Files.Count == 0) return false;
+        // Runs inside a low-level keyboard hook: must stay fast and non-blocking,
+        // otherwise Windows adds system-wide keystroke lag (or drops the hook).
+        if (_replayingPaste) return false;
 
         IntPtr foreground = NativeMethods.GetForegroundWindow();
         string? windowClass = ExplorerFolderService.GetWindowClassName(foreground);
         if (windowClass is not "CabinetWClass" and not "ExploreWClass") return false;
 
-        string[] snapshot = result.Files.ToArray();
-        bool isCut = result.IsCut;
-        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => ResolveAndTransfer(snapshot, isCut)));
+        if (!NativeMethods.IsClipboardFormatAvailable(NativeMethods.CfHdrop)) return false;
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => _ = ResolveAndTransferAsync()));
         return true;
     }
 
-    private void ResolveAndTransfer(string[] files, bool isCut)
+    private async Task ResolveAndTransferAsync()
     {
         IntPtr foreground = NativeMethods.GetForegroundWindow();
         string? windowClass = ExplorerFolderService.GetWindowClassName(foreground);
         if (windowClass is not "CabinetWClass" and not "ExploreWClass") return;
 
-        string? folder = ExplorerFolderService.GetFolderPathForWindow(foreground);
+        var clipboard = ClipboardService.TryGetClipboardFiles();
+        if (clipboard is null || clipboard.Files.Count == 0)
+        {
+            ReplayPaste();
+            return;
+        }
+
+        string? folder = await ExplorerFolderService.GetFolderPathForWindowAsync(foreground);
         if (string.IsNullOrEmpty(folder))
         {
             ReplayPaste();
             return;
         }
 
-        StartTransfer(files, folder, isCut: isCut);
+        StartTransfer(clipboard.Files.ToArray(), folder, isCut: clipboard.IsCut);
     }
 
     private void ReplayPaste()
